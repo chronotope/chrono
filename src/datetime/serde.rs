@@ -23,6 +23,22 @@ pub struct MicroSecondsTimestampVisitor;
 #[derive(Debug)]
 pub struct MilliSecondsTimestampVisitor;
 
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct SecondsTimeDeltaVisitor;
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct NanoSecondsTimeDeltaVisitor;
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct MicroSecondsTimeDeltaVisitor;
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct MilliSecondsTimeDeltaVisitor;
+
 /// Serialize to an RFC 3339 formatted string
 ///
 /// As an extension to RFC 3339 this can serialize `DateTime`s outside the range of 0-9999 years
@@ -1206,6 +1222,1021 @@ pub mod ts_seconds_option {
     }
 }
 
+/// Ser/de to/from timedeltas in nanoseconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::TimeDelta;
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::td_nanoseconds;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "td_nanoseconds")]
+///     delta: TimeDelta,
+/// }
+///
+/// let time = TimeDelta::nanoseconds(2018517);
+/// let my_s = S { delta: delta.clone() };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"delta":2018517}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.delta, delta);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+pub mod td_nanoseconds {
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::serde::invalid_time_delta;
+    use crate::TimeDelta;
+
+    use super::NanoSecondsTimeDeltaVisitor;
+
+    /// Serialize a [`TimeDelta`] into an integer number of nanoseconds.
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error on an out of range `TimeDelta`.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::td_nanoseconds::serialize as to_nano_td;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to_nano_td")]
+    ///     delta: TimeDelta,
+    /// }
+    ///
+    /// let my_s = S {
+    ///     delta: TimeDelta::nanoseconds(2018517),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"delta":2018517}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn serialize<S>(td: &TimeDelta, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        serializer.serialize_i64(td.num_nanoseconds().ok_or(ser::Error::custom(
+            "value out of range for a timedelta with nanosecond precision",
+        ))?)
+    }
+
+    /// Deserialize a [`TimeDelta`] from a nanosecond integer number.
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::td_nanoseconds::deserialize as from_nano_td;
+    /// #[derive(Debug, PartialEq, Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from_nano_td")]
+    ///     delta: TimeDelta,
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
+    /// assert_eq!(my_s, S { delta: TimeDelta::nanoseconds(2018517) });
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn deserialize<'de, D>(d: D) -> Result<TimeDelta, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_i64(NanoSecondsTimeDeltaVisitor)
+    }
+
+    impl de::Visitor<'_> for NanoSecondsTimeDeltaVisitor {
+        type Value = TimeDelta;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a timedelta in nanoseconds")
+        }
+
+        /// Deserialize a timedelta in nanoseconds
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(TimeDelta::nanoseconds(value))
+        }
+
+        /// Deserialize a timedelta in nanoseconds
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(TimeDelta::nanoseconds(value.try_into().map_err(|_| invalid_time_delta(value))?))
+        }
+    }
+}
+
+/// Ser/de to/from optional timedeltas in nanoseconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::Delta;
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::td_nanoseconds_option;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "td_nanoseconds_option")]
+///     delta: Option<TimeDelta>,
+/// }
+///
+/// let delta = Some(TimeDelta::nanoseconds(201817));
+/// let my_s = S { delta: delta.clone() };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"delta":201817}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.delta, delta);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+pub mod td_nanoseconds_option {
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::TimeDelta;
+
+    use super::NanoSecondsTimeDeltaVisitor;
+
+    /// Serialize a UTC datetime into an integer number of nanoseconds or none
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error on an out of range `DateTime`.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::td_nanoseconds_option::serialize as to_nano_tdopt;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to_nano_tdopt")]
+    ///     delta: Option<TimeDelta>,
+    /// }
+    ///
+    /// let my_s = S {
+    ///     delta: Some(TimeDelta::nanoseconds(2018517)),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"time":2018517}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn serialize<S>(opt: &Option<TimeDelta>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        match *opt {
+            Some(ref td) => serializer.serialize_some(&td.num_nanoseconds().ok_or(
+                ser::Error::custom("value out of range for a timedelta with nanosecond precision"),
+            )?),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    /// Deserialize a `DateTime` from a nanosecond timestamp or none
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::td_nanoseconds_option::deserialize as from_nano_tdopt;
+    /// #[derive(Debug, PartialEq, Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from_nano_tdopt")]
+    ///     delta: Option<TimeDelta>,
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
+    /// assert_eq!(my_s, S { delta: TimeDelta::nanoseconds(2018517) });
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<TimeDelta>, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_option(OptionNanoSecondsTimedeltaVisitor)
+    }
+
+    struct OptionNanoSecondsTimedeltaVisitor;
+
+    impl<'de> de::Visitor<'de> for OptionNanoSecondsTimedeltaVisitor {
+        type Value = Option<TimeDelta>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a timedelta in nanoseconds or none")
+        }
+
+        /// Deserialize a timedelta in nanoseconds
+        fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            d.deserialize_i64(NanoSecondsTimeDeltaVisitor).map(Some)
+        }
+
+        /// Deserialize a timedelta in nanoseconds
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+
+        /// Deserialize a timedelta in nanoseconds
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+    }
+}
+
+/// Ser/de to/from timedeltas in microseconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::TimeDelta;
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::td_microseconds;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "td_microseconds")]
+///     delta: TimeDelta,
+/// }
+///
+/// let time = TimeDelta::microseconds(2018517);
+/// let my_s = S { delta: delta.clone() };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"delta":2018517}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.delta, delta);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+pub mod td_microseconds {
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::serde::invalid_time_delta;
+    use crate::TimeDelta;
+
+    use super::MicroSecondsTimeDeltaVisitor;
+
+    /// Serialize a [`TimeDelta`] into an integer number of microseconds.
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error on an out of range `TimeDelta`.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::td_microseconds::serialize as to_micro_td;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to_micro_td")]
+    ///     delta: TimeDelta,
+    /// }
+    ///
+    /// let my_s = S {
+    ///     delta: TimeDelta::microseconds(2018517),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"delta":2018517}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn serialize<S>(td: &TimeDelta, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        serializer.serialize_i64(td.num_microseconds().ok_or(ser::Error::custom(
+            "value out of range for a timedelta with microsecond precision",
+        ))?)
+    }
+
+    /// Deserialize a [`TimeDelta`] from a microsecond integer number.
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::td_microseconds::deserialize as from_micro_td;
+    /// #[derive(Debug, PartialEq, Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from_micro_td")]
+    ///     delta: TimeDelta,
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
+    /// assert_eq!(my_s, S { delta: TimeDelta::microseconds(2018517) });
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn deserialize<'de, D>(d: D) -> Result<TimeDelta, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_i64(MicroSecondsTimeDeltaVisitor)
+    }
+
+    impl de::Visitor<'_> for MicroSecondsTimeDeltaVisitor {
+        type Value = TimeDelta;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a timedelta in microseconds")
+        }
+
+        /// Deserialize a timedelta in microseconds
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(TimeDelta::microseconds(value))
+        }
+
+        /// Deserialize a timedelta in microseconds
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(TimeDelta::microseconds(value.try_into().map_err(|_| invalid_time_delta(value))?))
+        }
+    }
+}
+
+/// Ser/de to/from optional timedeltas in microseconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::Delta;
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::td_microseconds_option;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "td_microseconds_option")]
+///     delta: Option<TimeDelta>,
+/// }
+///
+/// let delta = Some(TimeDelta::microseconds(201817));
+/// let my_s = S { delta: delta.clone() };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"delta":201817}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.delta, delta);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+pub mod td_microseconds_option {
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::TimeDelta;
+
+    use super::MicroSecondsTimeDeltaVisitor;
+
+    /// Serialize a UTC datetime into an integer number of microseconds or none
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error on an out of range `DateTime`.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::td_microseconds_option::serialize as to_micro_tdopt;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to_micro_tdopt")]
+    ///     delta: Option<TimeDelta>,
+    /// }
+    ///
+    /// let my_s = S {
+    ///     delta: Some(TimeDelta::microseconds(2018517)),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"time":2018517}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn serialize<S>(opt: &Option<TimeDelta>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        match *opt {
+            Some(ref td) => serializer.serialize_some(&td.num_microseconds().ok_or(
+                ser::Error::custom("value out of range for a timedelta with microsecond precision"),
+            )?),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    /// Deserialize a `DateTime` from a microsecond timestamp or none
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::td_microseconds_option::deserialize as from_micro_tdopt;
+    /// #[derive(Debug, PartialEq, Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from_micro_tdopt")]
+    ///     delta: Option<TimeDelta>,
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
+    /// assert_eq!(my_s, S { delta: TimeDelta::microseconds(2018517) });
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<TimeDelta>, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_option(OptionmicroSecondsTimedeltaVisitor)
+    }
+
+    struct OptionmicroSecondsTimedeltaVisitor;
+
+    impl<'de> de::Visitor<'de> for OptionmicroSecondsTimedeltaVisitor {
+        type Value = Option<TimeDelta>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a timedelta in microseconds or none")
+        }
+
+        /// Deserialize a timedelta in microseconds
+        fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            d.deserialize_i64(MicroSecondsTimeDeltaVisitor).map(Some)
+        }
+
+        /// Deserialize a timedelta in microseconds
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+
+        /// Deserialize a timedelta in microseconds
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+    }
+}
+
+/// Ser/de to/from timedeltas in milliseconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::TimeDelta;
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::td_milliseconds;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "td_milliseconds")]
+///     delta: TimeDelta,
+/// }
+///
+/// let time = TimeDelta::milliseconds(2018517);
+/// let my_s = S { delta: delta.clone() };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"delta":2018517}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.delta, delta);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+pub mod td_milliseconds {
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::serde::invalid_time_delta;
+    use crate::TimeDelta;
+
+    use super::MilliSecondsTimeDeltaVisitor;
+
+    /// Serialize a [`TimeDelta`] into an integer number of milliseconds.
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error on an out of range `TimeDelta`.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::td_milliseconds::serialize as to_milli_td;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to_milli_td")]
+    ///     delta: TimeDelta,
+    /// }
+    ///
+    /// let my_s = S {
+    ///     delta: TimeDelta::milliseconds(2018517),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"delta":2018517}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn serialize<S>(td: &TimeDelta, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        serializer.serialize_i64(td.num_milliseconds())
+    }
+
+    /// Deserialize a [`TimeDelta`] from a millisecond integer number.
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::td_milliseconds::deserialize as from_milli_td;
+    /// #[derive(Debug, PartialEq, Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from_milli_td")]
+    ///     delta: TimeDelta,
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
+    /// assert_eq!(my_s, S { delta: TimeDelta::milliseconds(2018517) });
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn deserialize<'de, D>(d: D) -> Result<TimeDelta, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_i64(MilliSecondsTimeDeltaVisitor)
+    }
+
+    impl de::Visitor<'_> for MilliSecondsTimeDeltaVisitor {
+        type Value = TimeDelta;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a timedelta in milliseconds")
+        }
+
+        /// Deserialize a timedelta in milliseconds
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(TimeDelta::milliseconds(value))
+        }
+
+        /// Deserialize a timedelta in milliseconds
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(TimeDelta::milliseconds(value.try_into().map_err(|_| invalid_time_delta(value))?))
+        }
+    }
+}
+
+/// Ser/de to/from optional timedeltas in milliseconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::Delta;
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::td_milliseconds_option;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "td_milliseconds_option")]
+///     delta: Option<TimeDelta>,
+/// }
+///
+/// let delta = Some(TimeDelta::milliseconds(201817));
+/// let my_s = S { delta: delta.clone() };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"delta":201817}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.delta, delta);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+pub mod td_milliseconds_option {
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::TimeDelta;
+
+    use super::MilliSecondsTimeDeltaVisitor;
+
+    /// Serialize a UTC datetime into an integer number of milliseconds or none
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error on an out of range `DateTime`.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::td_milliseconds_option::serialize as to_milli_tdopt;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to_milli_tdopt")]
+    ///     delta: Option<TimeDelta>,
+    /// }
+    ///
+    /// let my_s = S {
+    ///     delta: Some(TimeDelta::milliseconds(2018517)),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"time":2018517}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn serialize<S>(opt: &Option<TimeDelta>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        match *opt {
+            Some(ref td) => serializer.serialize_some(&td.num_milliseconds()),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    /// Deserialize a `DateTime` from a millisecond timestamp or none
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::td_milliseconds_option::deserialize as from_milli_tdopt;
+    /// #[derive(Debug, PartialEq, Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from_milli_tdopt")]
+    ///     delta: Option<TimeDelta>,
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
+    /// assert_eq!(my_s, S { delta: TimeDelta::milliseconds(2018517) });
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<TimeDelta>, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_option(OptionmilliSecondsTimedeltaVisitor)
+    }
+
+    struct OptionmilliSecondsTimedeltaVisitor;
+
+    impl<'de> de::Visitor<'de> for OptionmilliSecondsTimedeltaVisitor {
+        type Value = Option<TimeDelta>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a timedelta in milliseconds or none")
+        }
+
+        /// Deserialize a timedelta in milliseconds
+        fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            d.deserialize_i64(MilliSecondsTimeDeltaVisitor).map(Some)
+        }
+
+        /// Deserialize a timedelta in milliseconds
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+
+        /// Deserialize a timedelta in milliseconds
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+    }
+}
+
+/// Ser/de to/from timedeltas in seconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::TimeDelta;
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::td_seconds;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "td_seconds")]
+///     delta: TimeDelta,
+/// }
+///
+/// let time = TimeDelta::seconds(2018517);
+/// let my_s = S { delta: delta.clone() };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"delta":2018517}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.delta, delta);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+pub mod td_seconds {
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::serde::invalid_time_delta;
+    use crate::TimeDelta;
+
+    use super::SecondsTimeDeltaVisitor;
+
+    /// Serialize a [`TimeDelta`] into an integer number of seconds.
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error on an out of range `TimeDelta`.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::td_seconds::serialize as to__td;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to__td")]
+    ///     delta: TimeDelta,
+    /// }
+    ///
+    /// let my_s = S {
+    ///     delta: TimeDelta::seconds(2018517),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"delta":2018517}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn serialize<S>(td: &TimeDelta, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        serializer.serialize_i64(td.num_seconds())
+    }
+
+    /// Deserialize a [`TimeDelta`] from a second integer number.
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::td_seconds::deserialize as from__td;
+    /// #[derive(Debug, PartialEq, Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from__td")]
+    ///     delta: TimeDelta,
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
+    /// assert_eq!(my_s, S { delta: TimeDelta::seconds(2018517) });
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn deserialize<'de, D>(d: D) -> Result<TimeDelta, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_i64(SecondsTimeDeltaVisitor)
+    }
+
+    impl de::Visitor<'_> for SecondsTimeDeltaVisitor {
+        type Value = TimeDelta;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a timedelta in seconds")
+        }
+
+        /// Deserialize a timedelta in seconds
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(TimeDelta::seconds(value))
+        }
+
+        /// Deserialize a timedelta in seconds
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(TimeDelta::seconds(value.try_into().map_err(|_| invalid_time_delta(value))?))
+        }
+    }
+}
+
+/// Ser/de to/from optional timedeltas in seconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::Delta;
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::td_seconds_option;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "td_seconds_option")]
+///     delta: Option<TimeDelta>,
+/// }
+///
+/// let delta = Some(TimeDelta::seconds(201817));
+/// let my_s = S { delta: delta.clone() };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"delta":201817}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.delta, delta);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+pub mod td_seconds_option {
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::TimeDelta;
+
+    use super::SecondsTimeDeltaVisitor;
+
+    /// Serialize a UTC datetime into an integer number of seconds or none
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error on an out of range `DateTime`.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::td_seconds_option::serialize as to__tdopt;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to__tdopt")]
+    ///     delta: Option<TimeDelta>,
+    /// }
+    ///
+    /// let my_s = S {
+    ///     delta: Some(TimeDelta::seconds(2018517)),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"time":2018517}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn serialize<S>(opt: &Option<TimeDelta>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        match *opt {
+            Some(ref td) => serializer.serialize_some(&td.num_seconds()),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    /// Deserialize a `DateTime` from a second timestamp or none
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::TimeDelta;
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::td_seconds_option::deserialize as from__tdopt;
+    /// #[derive(Debug, PartialEq, Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from__tdopt")]
+    ///     delta: Option<TimeDelta>,
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
+    /// assert_eq!(my_s, S { delta: TimeDelta::seconds(2018517) });
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<TimeDelta>, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_option(OptionSecondsTimedeltaVisitor)
+    }
+
+    struct OptionSecondsTimedeltaVisitor;
+
+    impl<'de> de::Visitor<'de> for OptionSecondsTimedeltaVisitor {
+        type Value = Option<TimeDelta>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a timedelta in seconds or none")
+        }
+
+        /// Deserialize a timedelta in seconds
+        fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            d.deserialize_i64(SecondsTimeDeltaVisitor).map(Some)
+        }
+
+        /// Deserialize a timedelta in seconds
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+
+        /// Deserialize a timedelta in seconds
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     #[cfg(feature = "clock")]
