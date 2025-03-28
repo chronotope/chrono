@@ -38,6 +38,9 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "serde")]
 pub(super) mod serde;
 
+#[cfg(feature = "bincode")]
+pub(super) mod bincode;
+
 #[cfg(test)]
 mod tests;
 
