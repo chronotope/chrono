@@ -6,6 +6,8 @@ use bincode::{
     error::{DecodeError, EncodeError},
 };
 
+// TODO not very optimized for space
+
 impl<Tz: TimeZone> Encode for DateTime<Tz> {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         let v = self.to_rfc3339_opts(SecondsFormat::AutoSi, true);

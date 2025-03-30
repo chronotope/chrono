@@ -40,6 +40,9 @@ use crate::{expect, try_opt};
 
 use super::internals::{Mdf, YearFlags};
 
+#[cfg(feature = "bincode")]
+pub(crate) mod bincode;
+
 #[cfg(test)]
 mod tests;
 
