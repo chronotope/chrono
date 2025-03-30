@@ -24,6 +24,9 @@ use crate::{expect, try_opt};
 #[cfg(feature = "serde")]
 mod serde;
 
+#[cfg(feature = "bincode")]
+mod bincode;
+
 #[cfg(test)]
 mod tests;
 

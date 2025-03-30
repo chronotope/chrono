@@ -1131,7 +1131,7 @@ mod tests {
     use crate::serde::ts_nanoseconds_option;
     use crate::{DateTime, NaiveDate, NaiveDateTime, TimeZone, Utc};
 
-    use bincode::{deserialize, serialize};
+    use bincode_v1::{deserialize, serialize};
     use serde_derive::{Deserialize, Serialize};
 
     #[test]

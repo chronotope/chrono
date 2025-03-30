@@ -133,7 +133,7 @@ mod tests {
     fn test_serde_bincode() {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
-        use bincode::{deserialize, serialize};
+        use bincode_v1::{deserialize, serialize};
 
         let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
         let encoded = serialize(&t).unwrap();

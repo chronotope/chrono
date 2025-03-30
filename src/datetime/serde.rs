@@ -1298,7 +1298,7 @@ mod tests {
     fn test_serde_bincode() {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
-        use bincode::{deserialize, serialize};
+        use bincode_v1::{deserialize, serialize};
 
         let dt = Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap();
         let encoded = serialize(&dt).unwrap();

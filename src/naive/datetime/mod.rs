@@ -29,6 +29,10 @@ use crate::{
 #[cfg(feature = "serde")]
 pub(crate) mod serde;
 
+/// Tools to help encoding/decoding `NaiveDateTime`s
+#[cfg(feature = "bincode")]
+pub(crate) mod bincode;
+
 #[cfg(test)]
 mod tests;
 
