@@ -10,7 +10,7 @@ use bincode::{
 
 impl Encode for NaiveDate {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        let v = self.to_string();
+        let v = format!("{self:?}");
 
         <String>::encode(&v, encoder)
     }

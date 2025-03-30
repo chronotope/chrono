@@ -10,7 +10,7 @@ use bincode::{
 
 impl Encode for NaiveDateTime {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        let v = self.format("%Y-%m-%dT%H:%M:%S%.9f").to_string();
+        let v = format!("{self:?}");
 
         <String>::encode(&v, encoder)
     }
