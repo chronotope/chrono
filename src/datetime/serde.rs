@@ -1,11 +1,15 @@
 use core::fmt;
-use serde::{de, ser};
+use serde::{
+    de::{self, Error as _},
+    ser,
+};
 
 use super::DateTime;
-use crate::format::{SecondsFormat, write_rfc3339};
+use crate::format::SecondsFormat;
 #[cfg(feature = "clock")]
 use crate::offset::Local;
-use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
+use crate::offset::{FixedOffset, TimeZone, Utc};
+use serde::ser::SerializeTuple;
 
 #[doc(hidden)]
 #[derive(Debug)]
@@ -34,25 +38,22 @@ impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
     where
         S: ser::Serializer,
     {
-        struct FormatIso8601<'a, Tz: TimeZone> {
-            inner: &'a DateTime<Tz>,
+        if serializer.is_human_readable() {
+            return serializer.serialize_str(&self.to_rfc3339_opts(SecondsFormat::AutoSi, true));
         }
 
-        impl<Tz: TimeZone> fmt::Display for FormatIso8601<'_, Tz> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                let naive = self.inner.naive_local();
-                let offset = self.inner.offset.fix();
-                write_rfc3339(f, naive, offset, SecondsFormat::AutoSi, true)
-            }
-        }
+        let mut tuple = serializer.serialize_tuple(2)?;
 
-        serializer.collect_str(&FormatIso8601 { inner: self })
+        tuple.serialize_element(&(self.timestamp()))?;
+        tuple.serialize_element(&(self.timestamp_subsec_nanos()))?;
+
+        tuple.end()
     }
 }
 
-struct DateTimeVisitor;
+struct HumanReadableDateTimeVisitor;
 
-impl de::Visitor<'_> for DateTimeVisitor {
+impl de::Visitor<'_> for HumanReadableDateTimeVisitor {
     type Value = DateTime<FixedOffset>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -67,6 +68,29 @@ impl de::Visitor<'_> for DateTimeVisitor {
     }
 }
 
+struct CompactDateTimeVisitor;
+
+impl<'vi> de::Visitor<'vi> for CompactDateTimeVisitor {
+    type Value = DateTime<Utc>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter
+            .write_str("a tuple with UNIX timestamp & number of seconds since last second boundary")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'vi>,
+    {
+        let secs = seq.next_element()?.ok_or(A::Error::missing_field("timestamp"))?;
+        let nsecs = seq.next_element()?.ok_or(A::Error::missing_field("nanoseconds"))?;
+
+        Ok(DateTime::<Utc>::from_timestamp(secs, nsecs)
+            .ok_or(A::Error::custom("out-of-range number of seconds and/or invalid nanosecond"))
+            .unwrap())
+    }
+}
+
 /// Deserialize an RFC 3339 formatted string into a `DateTime<FixedOffset>`
 ///
 /// As an extension to RFC 3339 this can deserialize to `DateTime`s outside the range of 0-9999
@@ -78,7 +102,11 @@ impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
     where
         D: de::Deserializer<'de>,
     {
-        deserializer.deserialize_str(DateTimeVisitor)
+        if deserializer.is_human_readable() {
+            return deserializer.deserialize_str(HumanReadableDateTimeVisitor);
+        }
+
+        Ok(deserializer.deserialize_tuple(2, CompactDateTimeVisitor)?.fixed_offset())
     }
 }
 
@@ -95,7 +123,13 @@ impl<'de> de::Deserialize<'de> for DateTime<Utc> {
     where
         D: de::Deserializer<'de>,
     {
-        deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Utc))
+        if deserializer.is_human_readable() {
+            return deserializer
+                .deserialize_str(HumanReadableDateTimeVisitor)
+                .map(|dt| dt.with_timezone(&Utc));
+        }
+
+        deserializer.deserialize_tuple(2, CompactDateTimeVisitor)
     }
 }
 
@@ -114,7 +148,13 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
     where
         D: de::Deserializer<'de>,
     {
-        deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
+        if deserializer.is_human_readable() {
+            return deserializer
+                .deserialize_str(HumanReadableDateTimeVisitor)
+                .map(|dt| dt.with_timezone(&Local));
+        }
+
+        Ok(deserializer.deserialize_tuple(2, CompactDateTimeVisitor)?.with_timezone(&Local))
     }
 }
 
