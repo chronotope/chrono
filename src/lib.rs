@@ -606,7 +606,7 @@ pub use naive::__BenchYearFlags;
 ///
 /// *Available on crate feature 'serde' only.*
 ///
-/// [RFC 3339]: https://tools.ietf.org/html/rfc3339
+/// [RFC 3339]: https://datatracker.ietf.org/doc/html/rfc3339
 /// [`with` annotation]: https://serde.rs/field-attrs.html#with
 /// [`serialize_with`]: https://serde.rs/field-attrs.html#serialize_with
 /// [`deserialize_with`]: https://serde.rs/field-attrs.html#deserialize_with
