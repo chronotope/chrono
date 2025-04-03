@@ -37,11 +37,11 @@
 //! - `serde`: Enable serialization/deserialization via [serde].
 //! - `rkyv`: Deprecated, use the `rkyv-*` features.
 //! - `rkyv-16`: Enable serialization/deserialization via [rkyv],
-//!    using 16-bit integers for integral `*size` types.
+//!   using 16-bit integers for integral `*size` types.
 //! - `rkyv-32`: Enable serialization/deserialization via [rkyv],
-//!    using 32-bit integers for integral `*size` types.
+//!   using 32-bit integers for integral `*size` types.
 //! - `rkyv-64`: Enable serialization/deserialization via [rkyv],
-//!    using 64-bit integers for integral `*size` types.
+//!   using 64-bit integers for integral `*size` types.
 //! - `rkyv-validation`: Enable rkyv validation support using `bytecheck`.
 //! - `arbitrary`: Construct arbitrary instances of a type with the Arbitrary crate.
 //! - `unstable-locales`: Enable localization. This adds various methods with a `_localized` suffix.
