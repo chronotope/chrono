@@ -4,6 +4,7 @@
 //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
 //! but can be also used for the simpler date and time handling.
 
+use core::hash::{Hash, Hasher};
 use core::ops::RangeInclusive;
 
 use crate::Weekday;
@@ -212,7 +213,6 @@ impl PartialEq for NaiveWeek {
     }
 }
 
-use core::hash::{Hash, Hasher};
 impl Hash for NaiveWeek {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.first_day().hash(state);
@@ -300,6 +300,7 @@ mod test {
         let b =
             NaiveWeek { date: NaiveDate::from_ymd_opt(2025, 4, 4).unwrap(), start: Weekday::Mon };
         assert_eq!(a, b);
+
         let c =
             NaiveWeek { date: NaiveDate::from_ymd_opt(2025, 4, 3).unwrap(), start: Weekday::Sun };
         assert_ne!(a, c);
@@ -308,21 +309,25 @@ mod test {
 
     #[test]
     fn test_naiveweek_hash() {
-        let mut hasher = DefaultHasher::default();
         let a =
             NaiveWeek { date: NaiveDate::from_ymd_opt(2025, 4, 3).unwrap(), start: Weekday::Mon };
         let b =
             NaiveWeek { date: NaiveDate::from_ymd_opt(2025, 4, 4).unwrap(), start: Weekday::Mon };
         let c =
             NaiveWeek { date: NaiveDate::from_ymd_opt(2025, 4, 3).unwrap(), start: Weekday::Sun };
+
+        let mut hasher = DefaultHasher::default();
         a.hash(&mut hasher);
         let a_hash = hasher.finish();
+
         hasher = DefaultHasher::default();
         b.hash(&mut hasher);
         let b_hash = hasher.finish();
+
         hasher = DefaultHasher::default();
         c.hash(&mut hasher);
         let c_hash = hasher.finish();
+
         assert_eq!(a_hash, b_hash);
         assert_ne!(b_hash, c_hash);
         assert_ne!(a_hash, c_hash);
