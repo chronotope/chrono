@@ -279,6 +279,32 @@ where
     parse_internal(parsed, s, items)
 }
 
+fn get_numeric_item_len<'a, B>(item: Option<&B>) -> Option<usize>
+where
+    B: Borrow<Item<'a>>,
+{
+    use super::Fixed::*;
+
+    item.map(|i| match *i.borrow() {
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot })) => 3,
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot })) => 6,
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot })) => 9,
+        Item::Literal(prefix) => {
+            prefix.as_bytes().iter().take_while(|&&c| c.is_ascii_digit()).count()
+        }
+        _ => 0,
+    })
+}
+
+fn recalculate_numeric_item_width<'a, B>(s: &str, next_item: Option<&B>) -> usize
+where
+    B: Borrow<Item<'a>>,
+{
+    let next_width = get_numeric_item_len(next_item).unwrap_or(0);
+    let numeric_bytes_available = s.as_bytes().iter().take_while(|&&c| c.is_ascii_digit()).count();
+    numeric_bytes_available - next_width
+}
+
 fn parse_internal<'a, 'b, I, B>(
     parsed: &mut Parsed,
     mut s: &'b str,
@@ -300,7 +326,10 @@ where
         }};
     }
 
-    for item in items {
+    let mut items_iter = items.peekable();
+
+    while let Some(item) = items_iter.next() {
+        let next_item = items_iter.peek();
         match *item.borrow() {
             Item::Literal(prefix) => {
                 if s.len() < prefix.len() {
@@ -336,7 +365,16 @@ where
                 use super::Numeric::*;
                 type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
-                let (width, signed, set): (usize, bool, Setter) = match *spec {
+                s = s.trim_start();
+                let mut substr = s;
+                let negative = s.starts_with('-');
+                let positive = s.starts_with('+');
+                let starts_with_sign = negative || positive;
+                if starts_with_sign {
+                    substr = &s[1..];
+                }
+
+                let (mut width, signed, set): (usize, bool, Setter) = match *spec {
                     Year => (4, true, Parsed::set_year),
                     YearDiv100 => (2, false, Parsed::set_year_div_100),
                     YearMod100 => (2, false, Parsed::set_year_mod_100),
@@ -357,26 +395,25 @@ where
                     Minute => (2, false, Parsed::set_minute),
                     Second => (2, false, Parsed::set_second),
                     Nanosecond => (9, false, Parsed::set_nanosecond),
-                    Timestamp => (usize::MAX, false, Parsed::set_timestamp),
+                    Timestamp => (
+                        recalculate_numeric_item_width(substr, next_item),
+                        false,
+                        Parsed::set_timestamp,
+                    ),
 
                     // for the future expansion
                     Internal(ref int) => match int._dummy {},
                 };
 
-                s = s.trim_start();
-                let v = if signed {
-                    if s.starts_with('-') {
-                        let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
-                        0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
-                    } else if s.starts_with('+') {
-                        try_consume!(scan::number(&s[1..], 1, usize::MAX))
-                    } else {
-                        // if there is no explicit sign, we respect the original `width`
-                        try_consume!(scan::number(s, 1, width))
-                    }
-                } else {
-                    try_consume!(scan::number(s, 1, width))
-                };
+                if starts_with_sign && signed {
+                    width = recalculate_numeric_item_width(substr, next_item);
+                } else if starts_with_sign {
+                    return Err(INVALID);
+                }
+
+                let v = try_consume!(scan::number(substr, 1, width));
+                let v = if negative { 0i64.checked_sub(v).ok_or(OUT_OF_RANGE)? } else { v };
+
                 set(parsed, v)?;
             }
 
@@ -768,6 +805,7 @@ mod tests {
             &[num(Year), Space(" "), Literal("x"), Space(" "), Literal("1235")],
             parsed!(year: 1234),
         );
+        check("12341235", &[num(Year), Literal("1235")], parsed!(year: 1234));
 
         // signed numeric
         check("-42", &[num(Year)], parsed!(year: -42));
@@ -780,9 +818,12 @@ mod tests {
         check("  -42195", &[num(Year)], parsed!(year: -42195));
         check(" +42195", &[num(Year)], parsed!(year: 42195));
         check("  -42195", &[num(Year)], parsed!(year: -42195));
+        check("  -42195123", &[num(Year), Literal("123")], parsed!(year: -42195));
         check("  +42195", &[num(Year)], parsed!(year: 42195));
+        check("  +42195123", &[num(Year), Literal("123")], parsed!(year: 42195));
         check("-42195 ", &[num(Year)], Err(TOO_LONG));
         check("+42195 ", &[num(Year)], Err(TOO_LONG));
+        check("+42195123 ", &[num(Year), Literal("123")], Err(TOO_LONG));
         check("  -   42", &[num(Year)], Err(INVALID));
         check("  +   42", &[num(Year)], Err(INVALID));
         check("  -42195", &[Space("  "), num(Year)], parsed!(year: -42195));
@@ -1493,6 +1534,15 @@ mod tests {
             ),
         );
         check(
+            "20151230204",
+            &[
+                num(Year), Literal("123"), num(Month), num(Day)
+            ],
+            parsed!(
+                year: 2015, month: 2, day: 4
+            ),
+        );
+        check(
             "Mon, 10 Jun 2013 09:32:37 GMT",
             &[
                 fixed(Fixed::ShortWeekdayName), Literal(","), Space(" "), num(Day), Space(" "),
@@ -1546,6 +1596,31 @@ mod tests {
             "12345678901234.56789",
             &[num(Timestamp), Literal("."), num(Nanosecond)],
             parsed!(nanosecond: 56_789, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234111",
+            &[num(Timestamp), Literal("111")],
+            parsed!(timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567",
+            &[num(Timestamp), internal_fixed(Nanosecond3NoDot)],
+            parsed!(nanosecond: 567_000_000, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567",
+            &[num(Timestamp), internal_fixed(Nanosecond3NoDot)],
+            parsed!(nanosecond: 567_000_000, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567890",
+            &[num(Timestamp), internal_fixed(Nanosecond6NoDot)],
+            parsed!(nanosecond: 567_890_000, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567890123",
+            &[num(Timestamp), internal_fixed(Nanosecond9NoDot)],
+            parsed!(nanosecond: 567_890_123, timestamp: 12_345_678_901_234),
         );
         check(
             "12345678901234.56789",
