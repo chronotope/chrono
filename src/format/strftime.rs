@@ -227,13 +227,15 @@ impl<'a> StrftimeItems<'a> {
     /// ```
     #[must_use]
     pub const fn new(s: &'a str) -> StrftimeItems<'a> {
-        #[cfg(not(feature = "unstable-locales"))]
         {
-            StrftimeItems { remainder: s, queue: &[] }
-        }
-        #[cfg(feature = "unstable-locales")]
-        {
-            StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: None }
+            StrftimeItems {
+                remainder: s,
+                queue: &[],
+                #[cfg(feature = "unstable-locales")]
+                locale_str: "",
+                #[cfg(feature = "unstable-locales")]
+                locale: None,
+            }
         }
     }
 
