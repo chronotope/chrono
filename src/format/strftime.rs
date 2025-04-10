@@ -228,13 +228,14 @@ impl<'a> StrftimeItems<'a> {
     /// ```
     #[must_use]
     pub const fn new(s: &'a str) -> StrftimeItems<'a> {
-        #[cfg(not(feature = "unstable-locales"))]
-        {
-            StrftimeItems { remainder: s, queue: &[], lossy: false }
-        }
-        #[cfg(feature = "unstable-locales")]
-        {
-            StrftimeItems { remainder: s, queue: &[], lossy: false, locale_str: "", locale: None }
+        StrftimeItems {
+            remainder: s,
+            queue: &[],
+            lossy: false,
+            #[cfg(feature = "unstable-locales")]
+            locale_str: "",
+            #[cfg(feature = "unstable-locales")]
+            locale: None,
         }
     }
 
@@ -260,13 +261,14 @@ impl<'a> StrftimeItems<'a> {
     /// ```
     #[must_use]
     pub const fn new_lossy(s: &'a str) -> StrftimeItems<'a> {
-        #[cfg(not(feature = "unstable-locales"))]
-        {
-            StrftimeItems { remainder: s, queue: &[], lossy: true }
-        }
-        #[cfg(feature = "unstable-locales")]
-        {
-            StrftimeItems { remainder: s, queue: &[], lossy: true, locale_str: "", locale: None }
+        StrftimeItems {
+            remainder: s,
+            queue: &[],
+            lossy: true,
+            #[cfg(feature = "unstable-locales")]
+            locale_str: "",
+            #[cfg(feature = "unstable-locales")]
+            locale: None,
         }
     }
 
@@ -453,12 +455,12 @@ impl<'a> Iterator for StrftimeItems<'a> {
 }
 
 impl<'a> StrftimeItems<'a> {
-    fn error<'b, 'c>(
-        &'b mut self,
-        original: &'c str,
+    fn error<'b>(
+        &mut self,
+        original: &'b str,
         error_len: &mut usize,
         ch: Option<char>,
-    ) -> (&'c str, Item<'c>) {
+    ) -> (&'b str, Item<'b>) {
         if let Some(c) = ch {
             if self.lossy {
                 *error_len -= c.len_utf8();
