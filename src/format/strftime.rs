@@ -453,6 +453,23 @@ impl<'a> Iterator for StrftimeItems<'a> {
 }
 
 impl<'a> StrftimeItems<'a> {
+    fn error<'b, 'c>(
+        &'b mut self,
+        original: &'c str,
+        error_len: &mut usize,
+        ch: Option<char>,
+    ) -> (&'c str, Item<'c>) {
+        if let Some(c) = ch {
+            if self.lossy {
+                *error_len -= c.len_utf8();
+            }
+        }
+        (
+            &original[*error_len..],
+            if self.lossy { Item::Literal(&original[..*error_len]) } else { Item::Error },
+        )
+    }
+
     fn parse_next_item(&mut self, mut remainder: &'a str) -> Option<(&'a str, Item<'a>)> {
         use InternalInternal::*;
         use Item::{Literal, Space};
@@ -500,32 +517,6 @@ impl<'a> StrftimeItems<'a> {
                     error_len += 1;
                 }
 
-                macro_rules! error {
-                    () => {
-                        if self.lossy { Item::Literal(&original[..error_len]) } else { Item::Error }
-                    };
-                    ($ch:expr, _) => {
-                        if self.lossy {
-                            error_len -= $ch.len_utf8();
-                            remainder = &original[error_len..];
-                        }
-                    };
-                    ($ch:expr) => {{
-                        error!($ch, _);
-                        error!()
-                    }};
-                }
-
-                macro_rules! return_error {
-                    () => {
-                        return Some((remainder, error!()))
-                    };
-                    ($ch:expr) => {
-                        error!($ch, _);
-                        return_error!();
-                    };
-                }
-
                 macro_rules! next {
                     () => {
                         match remainder.chars().next() {
@@ -536,7 +527,7 @@ impl<'a> StrftimeItems<'a> {
                                 }
                                 x
                             }
-                            None => return_error!(), // premature end of string
+                            None => return Some(self.error(original, &mut error_len, None)), // premature end of string
                         }
                     };
                 }
@@ -551,7 +542,7 @@ impl<'a> StrftimeItems<'a> {
                 let is_alternate = spec == '#';
                 let spec = if pad_override.is_some() || is_alternate { next!() } else { spec };
                 if is_alternate && !HAVE_ALTERNATES.contains(spec) {
-                    return_error!(spec);
+                    return Some(self.error(original, &mut error_len, Some(spec)));
                 }
 
                 macro_rules! queue {
@@ -663,39 +654,71 @@ impl<'a> StrftimeItems<'a> {
                             remainder = &remainder[1..];
                             fixed(Fixed::TimezoneOffsetColon)
                         } else {
-                            error!()
+                            self.error(original, &mut error_len, None).1
                         }
                     }
                     '.' => match next!() {
                         '3' => match next!() {
                             'f' => fixed(Fixed::Nanosecond3),
-                            c => error!(c),
+                            c => {
+                                let res = self.error(original, &mut error_len, Some(c));
+                                remainder = res.0;
+                                res.1
+                            }
                         },
                         '6' => match next!() {
                             'f' => fixed(Fixed::Nanosecond6),
-                            c => error!(c),
+                            c => {
+                                let res = self.error(original, &mut error_len, Some(c));
+                                remainder = res.0;
+                                res.1
+                            }
                         },
                         '9' => match next!() {
                             'f' => fixed(Fixed::Nanosecond9),
-                            c => error!(c),
+                            c => {
+                                let res = self.error(original, &mut error_len, Some(c));
+                                remainder = res.0;
+                                res.1
+                            }
                         },
                         'f' => fixed(Fixed::Nanosecond),
-                        c => error!(c),
+                        c => {
+                            let res = self.error(original, &mut error_len, Some(c));
+                            remainder = res.0;
+                            res.1
+                        }
                     },
                     '3' => match next!() {
                         'f' => internal_fixed(Nanosecond3NoDot),
-                        c => error!(c),
+                        c => {
+                            let res = self.error(original, &mut error_len, Some(c));
+                            remainder = res.0;
+                            res.1
+                        }
                     },
                     '6' => match next!() {
                         'f' => internal_fixed(Nanosecond6NoDot),
-                        c => error!(c),
+                        c => {
+                            let res = self.error(original, &mut error_len, Some(c));
+                            remainder = res.0;
+                            res.1
+                        }
                     },
                     '9' => match next!() {
                         'f' => internal_fixed(Nanosecond9NoDot),
-                        c => error!(c),
+                        c => {
+                            let res = self.error(original, &mut error_len, Some(c));
+                            remainder = res.0;
+                            res.1
+                        }
                     },
                     '%' => Literal("%"),
-                    c => error!(c), // no such specifier
+                    c => {
+                        let res = self.error(original, &mut error_len, Some(c));
+                        remainder = res.0;
+                        res.1
+                    }
                 };
 
                 // Adjust `item` if we have any padding modifier.
@@ -706,7 +729,7 @@ impl<'a> StrftimeItems<'a> {
                         Item::Numeric(ref kind, _pad) if self.queue.is_empty() => {
                             Some((remainder, Item::Numeric(kind.clone(), new_pad)))
                         }
-                        _ => Some((remainder, error!())),
+                        _ => Some(self.error(original, &mut error_len, None)),
                     }
                 } else {
                     Some((remainder, item))
