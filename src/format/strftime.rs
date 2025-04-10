@@ -93,8 +93,10 @@ This is not allowed for other specifiers and will result in the `BAD_FORMAT` err
 Modifier | Description
 -------- | -----------
 `%-?`    | Suppresses any padding including spaces and zeroes. (e.g. `%j` = `012`, `%-j` = `12`)
-`%_?`    | Uses spaces as a padding. (e.g. `%j` = `012`, `%_j` = ` 12`)
-`%0?`    | Uses zeroes as a padding. (e.g. `%e` = ` 9`, `%0e` = `09`)
+`%_?`    | Uses spaces as a padding. (e.g. `%j` = `012`,  `%_j` =  ` 12`)
+`%_X?`   | Uses spaces as a padding. (e.g. `%j` = `012`, `%_4j` = `  12`)
+`%0?`    | Uses zeroes as a padding. (e.g. `%e` = ` 9`,  `%0e` =  `09`)
+`%0X?`   | Uses zeroes as a padding. (e.g. `%e` = ` 9`, `%03e` = `009`)
 
 Notes:
 
@@ -470,18 +472,25 @@ impl<'a> StrftimeItems<'a> {
                     };
                 }
 
-                let spec = next!();
-                let pad_override = match spec {
-                    '-' => Some(Pad::None),
-                    '0' => Some(Pad::Zero),
-                    '_' => Some(Pad::Space),
-                    _ => None,
+                let (padding, is_alternate, mut spec) = match next!() {
+                    '-' => (Some(Pad::None), false, next!()),
+                    '0' => (Some(Pad::Zero), false, next!()),
+                    '_' => (Some(Pad::Space), false, next!()),
+                    '#' => (None, true, next!()),
+                    spec => (None, false, spec),
                 };
-                let is_alternate = spec == '#';
-                let spec = if pad_override.is_some() || is_alternate { next!() } else { spec };
                 if is_alternate && !HAVE_ALTERNATES.contains(spec) {
                     return Some((remainder, Item::Error));
                 }
+                let mut padding_width: usize = 0;
+                if padding.is_some() {
+                    // try parse padding width
+                    while let Some(digit) = spec.to_digit(10) {
+                        padding_width *= 10;
+                        padding_width += digit as usize;
+                        spec = next!();
+                    }
+                };
 
                 macro_rules! queue {
                     [$head:expr, $($tail:expr),+ $(,)*] => ({
@@ -630,11 +639,12 @@ impl<'a> StrftimeItems<'a> {
                 // Adjust `item` if we have any padding modifier.
                 // Not allowed on non-numeric items or on specifiers composed out of multiple
                 // formatting items.
-                if let Some(new_pad) = pad_override {
+                if let Some(new_pad) = padding {
                     match item {
-                        Item::Numeric(ref kind, _pad) if self.queue.is_empty() => {
-                            Some((remainder, Item::Numeric(kind.clone(), new_pad)))
-                        }
+                        Item::Numeric(kind, _pad) if self.queue.is_empty() => Some((
+                            remainder,
+                            Item::Numeric(kind.with_padding(padding_width), new_pad),
+                        )),
                         _ => Some((remainder, Item::Error)),
                     }
                 } else {
@@ -835,12 +845,20 @@ mod tests {
         assert_eq!(parse_and_collect("%:j"), [Item::Error]);
         assert_eq!(parse_and_collect("%-j"), [num(Ordinal)]);
         assert_eq!(parse_and_collect("%0j"), [num0(Ordinal)]);
+        assert_eq!(parse_and_collect("%05j"), [num0(Ordinal.with_padding(5))]);
+        assert_eq!(parse_and_collect("%010j"), [num0(Ordinal.with_padding(10))]);
         assert_eq!(parse_and_collect("%_j"), [nums(Ordinal)]);
+        assert_eq!(parse_and_collect("%_5j"), [nums(Ordinal.with_padding(5))]);
+        assert_eq!(parse_and_collect("%_10j"), [nums(Ordinal.with_padding(10))]);
         assert_eq!(parse_and_collect("%.e"), [Item::Error]);
         assert_eq!(parse_and_collect("%:e"), [Item::Error]);
         assert_eq!(parse_and_collect("%-e"), [num(Day)]);
         assert_eq!(parse_and_collect("%0e"), [num0(Day)]);
+        assert_eq!(parse_and_collect("%05e"), [num0(Day.with_padding(5))]);
+        assert_eq!(parse_and_collect("%010e"), [num0(Day.with_padding(10))]);
         assert_eq!(parse_and_collect("%_e"), [nums(Day)]);
+        assert_eq!(parse_and_collect("%_5e"), [nums(Day.with_padding(5))]);
+        assert_eq!(parse_and_collect("%_10e"), [nums(Day.with_padding(10))]);
         assert_eq!(parse_and_collect("%z"), [fixed(Fixed::TimezoneOffset)]);
         assert_eq!(parse_and_collect("%:z"), [fixed(Fixed::TimezoneOffsetColon)]);
         assert_eq!(parse_and_collect("%Z"), [fixed(Fixed::TimezoneName)]);
@@ -851,6 +869,50 @@ mod tests {
             [internal_fixed(InternalInternal::TimezoneOffsetPermissive)]
         );
         assert_eq!(parse_and_collect("%#m"), [Item::Error]);
+    }
+
+    #[cfg(feature = "alloc")]
+    fn test_padding(
+        dt: DateTime<FixedOffset>,
+        format_string: &str,
+        default_pad_width: usize,
+        expected_base: &str,
+    ) {
+        let format = format!("%-{format_string}");
+        let expected = expected_base;
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
+
+        let format = format!("%-5{format_string}");
+        let expected = expected_base;
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
+
+        let format = format!("%-10{format_string}");
+        let expected = expected_base;
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
+
+        let format = format!("%_{format_string}");
+        let expected = format!("{:>1$}", expected_base, default_pad_width);
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
+
+        let format = format!("%_5{format_string}");
+        let expected = format!("{:>1$}", expected_base, 5);
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
+
+        let format = format!("%_10{format_string}");
+        let expected = format!("{:>1$}", expected_base, 10);
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
+
+        let format = format!("%0{format_string}");
+        let expected = format!("{:0>1$}", expected_base, default_pad_width);
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
+
+        let format = format!("%05{format_string}");
+        let expected = format!("{:0>1$}", expected_base, 5);
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
+
+        let format = format!("%010{format_string}");
+        let expected = format!("{:0>1$}", expected_base, 10);
+        assert_eq!(dt.format(&format).to_string(), expected, "with format '{}'", format);
     }
 
     #[test]
@@ -893,6 +955,22 @@ mod tests {
         assert_eq!(dt.format("%F").to_string(), "2001-07-08");
         assert_eq!(dt.format("%v").to_string(), " 8-Jul-2001");
 
+        test_padding(dt, "Y", 4, "2001");
+        test_padding(dt, "C", 2, "20");
+        test_padding(dt, "y", 2, "1");
+        test_padding(dt, "q", 1, "3");
+        test_padding(dt, "m", 2, "7");
+        test_padding(dt, "d", 2, "8");
+        test_padding(dt, "e", 2, "8");
+        test_padding(dt, "w", 1, "0");
+        test_padding(dt, "u", 1, "7");
+        test_padding(dt, "U", 2, "27");
+        test_padding(dt, "W", 2, "27");
+        test_padding(dt, "G", 4, "2001");
+        test_padding(dt, "g", 2, "1");
+        test_padding(dt, "V", 2, "27");
+        test_padding(dt, "j", 3, "189");
+
         // time specifiers
         assert_eq!(dt.format("%H").to_string(), "00");
         assert_eq!(dt.format("%k").to_string(), " 0");
@@ -917,6 +995,15 @@ mod tests {
         assert_eq!(dt.format("%T").to_string(), "00:34:60");
         assert_eq!(dt.format("%X").to_string(), "00:34:60");
         assert_eq!(dt.format("%r").to_string(), "12:34:60 AM");
+
+        test_padding(dt, "H", 2, "0");
+        test_padding(dt, "k", 2, "0");
+        test_padding(dt, "I", 2, "12");
+        test_padding(dt, "l", 2, "12");
+        test_padding(dt, "l", 2, "12");
+        test_padding(dt, "M", 2, "34");
+        test_padding(dt, "S", 2, "60");
+        test_padding(dt, "f", 9, "26490708");
 
         // time zone specifiers
         //assert_eq!(dt.format("%Z").to_string(), "ACST");
@@ -1114,7 +1201,16 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "unstable-locales", target_pointer_width = "64"))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc", target_pointer_width = "64"))]
+    fn test_type_sizes() {
+        use core::mem::size_of;
+        assert_eq!(size_of::<Item>(), 32);
+        assert_eq!(size_of::<StrftimeItems>(), 56);
+        assert_eq!(size_of::<Locale>(), 2);
+    }
+
+    #[test]
+    #[cfg(all(feature = "unstable-locales", not(feature = "alloc"), target_pointer_width = "64"))]
     fn test_type_sizes() {
         use core::mem::size_of;
         assert_eq!(size_of::<Item>(), 24);
@@ -1123,7 +1219,16 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "unstable-locales", target_pointer_width = "32"))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc", target_pointer_width = "32"))]
+    fn test_type_sizes() {
+        use core::mem::size_of;
+        assert_eq!(size_of::<Item>(), 16);
+        assert_eq!(size_of::<StrftimeItems>(), 28);
+        assert_eq!(size_of::<Locale>(), 2);
+    }
+
+    #[test]
+    #[cfg(all(feature = "unstable-locales", not(feature = "alloc"), target_pointer_width = "32"))]
     fn test_type_sizes() {
         use core::mem::size_of;
         assert_eq!(size_of::<Item>(), 12);

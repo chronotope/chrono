@@ -7,6 +7,8 @@
 use core::borrow::Borrow;
 use core::str;
 
+#[cfg(feature = "alloc")]
+use super::ParseErrorKind::BadFormat;
 use super::scan;
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
@@ -359,7 +361,9 @@ where
                     Nanosecond => (9, false, Parsed::set_nanosecond),
                     Timestamp => (usize::MAX, false, Parsed::set_timestamp),
 
-                    // for the future expansion
+                    #[cfg(feature = "alloc")]
+                    Padded { .. } => return Err(ParseError(BadFormat)),
+
                     Internal(ref int) => match int._dummy {},
                 };
 
@@ -1570,6 +1574,88 @@ mod tests {
             "2000-01-02 03:04:05Z",
             &[
                 num(Year), Literal("-"), num(Month), Literal("-"), num(Day), Space(" "),
+                num(Hour), Literal(":"), num(Minute), Literal(":"), num(Second),
+                internal_fixed(TimezoneOffsetPermissive)
+            ],
+            parsed!(
+                year: 2000, month: 1, day: 2, hour_div_12: 0, hour_mod_12: 3, minute: 4, second: 5,
+                offset: 0
+            ),
+        );
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    #[cfg(feature = "alloc")]
+    fn test_parse_padded() {
+        use crate::format::InternalInternal::*;
+        use crate::format::Item::{Literal, Space};
+        use crate::format::Numeric::*;
+        use crate::format::ParseErrorKind::BadFormat;
+
+        check(
+            "2000-01-02 03:04:05Z",
+            &[
+                nums(Year.with_padding(5))
+            ],
+            Err(ParseError(BadFormat)),
+        );
+
+        check(
+            "2000-01-02 03:04:05Z",
+            &[
+                nums(Year.with_padding(5)), Literal("-"), num(Month), Literal("-"), num(Day), Space(" "),
+                num(Hour), Literal(":"), num(Minute), Literal(":"), num(Second),
+                internal_fixed(TimezoneOffsetPermissive)
+            ],
+            Err(ParseError(BadFormat)),
+        );
+
+        check(
+            "2000-01-02 03:04:05Z",
+            &[
+                num(Year), Literal("-"), num(Month), Literal("-"), nums(Day.with_padding(5)), Space(" "),
+                num(Hour), Literal(":"), num(Minute), Literal(":"), num(Second),
+                internal_fixed(TimezoneOffsetPermissive)
+            ],
+            Err(ParseError(BadFormat)),
+        );
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    #[cfg(not(feature = "alloc"))]
+    fn test_parse_padded_disabled() {
+        use crate::format::InternalInternal::*;
+        use crate::format::Item::{Literal, Space};
+        use crate::format::Numeric::*;
+        use crate::format::ParseErrorKind::TooLong;
+
+        check(
+            "2000-01-02 03:04:05Z",
+            &[
+                nums(Year.with_padding(5))
+            ],
+            Err(ParseError(TooLong)),
+        );
+
+        check(
+            "2000-01-02 03:04:05Z",
+            &[
+                nums(Year.with_padding(5)), Literal("-"), num(Month), Literal("-"), num(Day), Space(" "),
+                num(Hour), Literal(":"), num(Minute), Literal(":"), num(Second),
+                internal_fixed(TimezoneOffsetPermissive)
+            ],
+            parsed!(
+                year: 2000, month: 1, day: 2, hour_div_12: 0, hour_mod_12: 3, minute: 4, second: 5,
+                offset: 0
+            ),
+        );
+
+        check(
+            "2000-01-02 03:04:05Z",
+            &[
+                num(Year), Literal("-"), num(Month), Literal("-"), nums(Day.with_padding(5)), Space(" "),
                 num(Hour), Literal(":"), num(Minute), Literal(":"), num(Second),
                 internal_fixed(TimezoneOffsetPermissive)
             ],

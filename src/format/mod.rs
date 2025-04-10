@@ -33,6 +33,8 @@
 
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::boxed::Box;
+#[cfg(feature = "alloc")]
+use alloc::sync::Arc;
 use core::fmt;
 use core::str::FromStr;
 #[cfg(feature = "std")]
@@ -149,11 +151,69 @@ pub enum Numeric {
     /// For formatting, it assumes UTC upon the absence of time zone offset.
     Timestamp,
 
+    #[cfg(feature = "alloc")]
+    /// An extension to carry the width of the padding.
+    Padded {
+        /// The numeric to be padded.
+        numeric: Arc<Numeric>,
+        /// The width of the padding.
+        width: usize,
+    },
+
     /// Internal uses only.
     ///
     /// This item exists so that one can add additional internal-only formatting
     /// without breaking major compatibility (as enum variants cannot be selectively private).
     Internal(InternalNumeric),
+}
+
+#[cfg(feature = "alloc")]
+impl Numeric {
+    /// Adds the with of the padding to the numeric
+    ///
+    /// Should be removed if the padding width is added to the `Pad` enum.
+    pub fn with_padding(self, width: usize) -> Self {
+        if width != 0 {
+            // update padding
+            match self {
+                Numeric::Padded { numeric, .. } => Numeric::Padded { numeric, width },
+                numeric => Numeric::Padded { numeric: Arc::new(numeric), width },
+            }
+        } else {
+            // remove padding
+            match self {
+                Numeric::Padded { numeric, .. } => numeric.as_ref().clone(),
+                numeric => numeric,
+            }
+        }
+    }
+
+    /// Gets the numeric and padding width from the numeric
+    ///
+    /// Should be removed if the padding width is added to the `Pad` enum.
+    pub fn unwrap_padding(&self) -> (&Self, usize) {
+        match self {
+            Numeric::Padded { numeric, width } => (numeric.as_ref(), *width),
+            numeric => (numeric, 0),
+        }
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl Numeric {
+    /// Adds the with of the padding to the numeric
+    ///
+    /// Should be removed if the padding width is added to the `Pad` enum.
+    pub fn with_padding(self, _width: usize) -> Self {
+        self
+    }
+
+    /// Gets the numeric and padding width from the numeric
+    ///
+    /// Should be removed if the padding width is added to the `Pad` enum.
+    pub fn unwrap_padding(&self) -> (&Self, usize) {
+        (self, 0)
+    }
 }
 
 /// An opaque type representing numeric item types for internal uses only.
@@ -553,5 +613,48 @@ impl FromStr for Month {
         } else {
             Err(ParseMonthError { _dummy: () })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::format::*;
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn test_numeric_with_padding() {
+        // No padding
+        assert_eq!(Numeric::Year.with_padding(0), Numeric::Year);
+
+        // Add padding
+        assert_eq!(
+            Numeric::Year.with_padding(5),
+            Numeric::Padded { numeric: Arc::new(Numeric::Year), width: 5 }
+        );
+
+        // Update padding
+        assert_eq!(
+            Numeric::Year.with_padding(5).with_padding(10),
+            Numeric::Padded { numeric: Arc::new(Numeric::Year), width: 10 }
+        );
+
+        // Remove padding
+        assert_eq!(Numeric::Year.with_padding(5).with_padding(0), Numeric::Year);
+    }
+
+    #[test]
+    #[cfg(not(feature = "alloc"))]
+    fn test_numeric_with_padding_disabled() {
+        // No padding
+        assert_eq!(Numeric::Year.with_padding(0), Numeric::Year);
+
+        // Add padding
+        assert_eq!(Numeric::Year.with_padding(5), Numeric::Year);
+
+        // Update padding
+        assert_eq!(Numeric::Year.with_padding(5).with_padding(10), Numeric::Year);
+
+        // Remove padding
+        assert_eq!(Numeric::Year.with_padding(5).with_padding(0), Numeric::Year);
     }
 }
