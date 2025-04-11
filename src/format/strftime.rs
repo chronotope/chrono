@@ -195,6 +195,7 @@ pub struct StrftimeItems<'a> {
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
     /// `queue` stores a slice of `Item`s that have to be returned one by one.
     queue: &'static [Item<'static>],
+    lenient: bool,
     #[cfg(feature = "unstable-locales")]
     locale_str: &'a str,
     #[cfg(feature = "unstable-locales")]
@@ -227,15 +228,47 @@ impl<'a> StrftimeItems<'a> {
     /// ```
     #[must_use]
     pub const fn new(s: &'a str) -> StrftimeItems<'a> {
-        {
-            StrftimeItems {
-                remainder: s,
-                queue: &[],
-                #[cfg(feature = "unstable-locales")]
-                locale_str: "",
-                #[cfg(feature = "unstable-locales")]
-                locale: None,
-            }
+        StrftimeItems {
+            remainder: s,
+            queue: &[],
+            lenient: false,
+            #[cfg(feature = "unstable-locales")]
+            locale_str: "",
+            #[cfg(feature = "unstable-locales")]
+            locale: None,
+        }
+    }
+
+    /// The same as [`StrftimeItems::new`], but returns [`Item::Literal`] instead of [`Item::Error`].
+    ///
+    /// Useful for formatting according to potentially invalid format strings.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::format::*;
+    ///
+    /// let strftime_parser = StrftimeItems::new_lenient("%Y-%Q"); // %Y: year, %Q: invalid
+    ///
+    /// const ITEMS: &[Item<'static>] = &[
+    ///     Item::Numeric(Numeric::Year, Pad::Zero),
+    ///     Item::Literal("-"),
+    ///     Item::Literal("%"),
+    ///     Item::Literal("Q"),
+    /// ];
+    /// println!("{:?}", strftime_parser.clone().collect::<Vec<_>>());
+    /// assert!(strftime_parser.eq(ITEMS.iter().cloned()));
+    /// ```
+    #[must_use]
+    pub const fn new_lenient(s: &'a str) -> StrftimeItems<'a> {
+        StrftimeItems {
+            remainder: s,
+            queue: &[],
+            lenient: true,
+            #[cfg(feature = "unstable-locales")]
+            locale_str: "",
+            #[cfg(feature = "unstable-locales")]
+            locale: None,
         }
     }
 
@@ -288,7 +321,13 @@ impl<'a> StrftimeItems<'a> {
     #[cfg(feature = "unstable-locales")]
     #[must_use]
     pub const fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
-        StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: Some(locale) }
+        StrftimeItems {
+            remainder: s,
+            queue: &[],
+            lenient: false,
+            locale_str: "",
+            locale: Some(locale),
+        }
     }
 
     /// Parse format string into a `Vec` of formatting [`Item`]'s.
@@ -310,7 +349,7 @@ impl<'a> StrftimeItems<'a> {
     /// # Errors
     ///
     /// Returns an error if the format string contains an invalid or unrecognized formatting
-    /// specifier.
+    /// specifier and the [`StrftimeItems`] wasn't constructed with [`new_lenient`][Self::new_lenient].
     ///
     /// # Example
     ///
@@ -354,7 +393,7 @@ impl<'a> StrftimeItems<'a> {
     /// # Errors
     ///
     /// Returns an error if the format string contains an invalid or unrecognized formatting
-    /// specifier.
+    /// specifier and the [`StrftimeItems`] wasn't constructed with [`new_lenient`][Self::new_lenient].
     ///
     /// # Example
     ///
@@ -416,6 +455,22 @@ impl<'a> Iterator for StrftimeItems<'a> {
 }
 
 impl<'a> StrftimeItems<'a> {
+    fn error<'b>(
+        &mut self,
+        original: &'b str,
+        error_len: &mut usize,
+        ch: Option<char>,
+    ) -> (&'b str, Item<'b>) {
+        if !self.lenient {
+            return (&original[*error_len..], Item::Error);
+        }
+
+        if let Some(c) = ch {
+            *error_len -= c.len_utf8();
+        }
+        (&original[*error_len..], Item::Literal(&original[..*error_len]))
+    }
+
     fn parse_next_item(&mut self, mut remainder: &'a str) -> Option<(&'a str, Item<'a>)> {
         use InternalInternal::*;
         use Item::{Literal, Space};
@@ -456,16 +511,24 @@ impl<'a> StrftimeItems<'a> {
 
             // the next item is a specifier
             Some('%') => {
+                let original = remainder;
                 remainder = &remainder[1..];
+                let mut error_len = 0;
+                if self.lenient {
+                    error_len += 1;
+                }
 
                 macro_rules! next {
                     () => {
                         match remainder.chars().next() {
                             Some(x) => {
                                 remainder = &remainder[x.len_utf8()..];
+                                if self.lenient {
+                                    error_len += x.len_utf8();
+                                }
                                 x
                             }
-                            None => return Some((remainder, Item::Error)), // premature end of string
+                            None => return Some(self.error(original, &mut error_len, None)), // premature end of string
                         }
                     };
                 }
@@ -480,7 +543,7 @@ impl<'a> StrftimeItems<'a> {
                 let is_alternate = spec == '#';
                 let spec = if pad_override.is_some() || is_alternate { next!() } else { spec };
                 if is_alternate && !HAVE_ALTERNATES.contains(spec) {
-                    return Some((remainder, Item::Error));
+                    return Some(self.error(original, &mut error_len, Some(spec)));
                 }
 
                 macro_rules! queue {
@@ -592,39 +655,71 @@ impl<'a> StrftimeItems<'a> {
                             remainder = &remainder[1..];
                             fixed(Fixed::TimezoneOffsetColon)
                         } else {
-                            Item::Error
+                            self.error(original, &mut error_len, None).1
                         }
                     }
                     '.' => match next!() {
                         '3' => match next!() {
                             'f' => fixed(Fixed::Nanosecond3),
-                            _ => Item::Error,
+                            c => {
+                                let res = self.error(original, &mut error_len, Some(c));
+                                remainder = res.0;
+                                res.1
+                            }
                         },
                         '6' => match next!() {
                             'f' => fixed(Fixed::Nanosecond6),
-                            _ => Item::Error,
+                            c => {
+                                let res = self.error(original, &mut error_len, Some(c));
+                                remainder = res.0;
+                                res.1
+                            }
                         },
                         '9' => match next!() {
                             'f' => fixed(Fixed::Nanosecond9),
-                            _ => Item::Error,
+                            c => {
+                                let res = self.error(original, &mut error_len, Some(c));
+                                remainder = res.0;
+                                res.1
+                            }
                         },
                         'f' => fixed(Fixed::Nanosecond),
-                        _ => Item::Error,
+                        c => {
+                            let res = self.error(original, &mut error_len, Some(c));
+                            remainder = res.0;
+                            res.1
+                        }
                     },
                     '3' => match next!() {
                         'f' => internal_fixed(Nanosecond3NoDot),
-                        _ => Item::Error,
+                        c => {
+                            let res = self.error(original, &mut error_len, Some(c));
+                            remainder = res.0;
+                            res.1
+                        }
                     },
                     '6' => match next!() {
                         'f' => internal_fixed(Nanosecond6NoDot),
-                        _ => Item::Error,
+                        c => {
+                            let res = self.error(original, &mut error_len, Some(c));
+                            remainder = res.0;
+                            res.1
+                        }
                     },
                     '9' => match next!() {
                         'f' => internal_fixed(Nanosecond9NoDot),
-                        _ => Item::Error,
+                        c => {
+                            let res = self.error(original, &mut error_len, Some(c));
+                            remainder = res.0;
+                            res.1
+                        }
                     },
                     '%' => Literal("%"),
-                    _ => Item::Error, // no such specifier
+                    c => {
+                        let res = self.error(original, &mut error_len, Some(c));
+                        remainder = res.0;
+                        res.1
+                    }
                 };
 
                 // Adjust `item` if we have any padding modifier.
@@ -635,7 +730,7 @@ impl<'a> StrftimeItems<'a> {
                         Item::Numeric(ref kind, _pad) if self.queue.is_empty() => {
                             Some((remainder, Item::Numeric(kind.clone(), new_pad)))
                         }
-                        _ => Some((remainder, Item::Error)),
+                        _ => Some(self.error(original, &mut error_len, None)),
                     }
                 } else {
                     Some((remainder, item))
@@ -1138,5 +1233,17 @@ mod tests {
         let fmt_items = fmt_str.parse().unwrap();
         let dt = Utc.with_ymd_and_hms(2014, 5, 7, 12, 34, 56).unwrap();
         assert_eq!(&dt.format_with_items(fmt_items.iter()).to_string(), "2014-05-07T12:34:56+0000");
+    }
+
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_strftime_parse_lenient() {
+        let fmt_str = StrftimeItems::new_lenient("%Y-%m-%dT%H:%M:%S%z%Q%.2f%%%");
+        let fmt_items = fmt_str.parse().unwrap();
+        let dt = Utc.with_ymd_and_hms(2014, 5, 7, 12, 34, 56).unwrap();
+        assert_eq!(
+            &dt.format_with_items(fmt_items.iter()).to_string(),
+            "2014-05-07T12:34:56+0000%Q%.2f%%"
+        );
     }
 }
