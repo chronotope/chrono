@@ -195,7 +195,7 @@ pub struct StrftimeItems<'a> {
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
     /// `queue` stores a slice of `Item`s that have to be returned one by one.
     queue: &'static [Item<'static>],
-    lossy: bool,
+    lenient: bool,
     #[cfg(feature = "unstable-locales")]
     locale_str: &'a str,
     #[cfg(feature = "unstable-locales")]
@@ -231,7 +231,7 @@ impl<'a> StrftimeItems<'a> {
         StrftimeItems {
             remainder: s,
             queue: &[],
-            lossy: false,
+            lenient: false,
             #[cfg(feature = "unstable-locales")]
             locale_str: "",
             #[cfg(feature = "unstable-locales")]
@@ -248,7 +248,7 @@ impl<'a> StrftimeItems<'a> {
     /// ```
     /// use chrono::format::*;
     ///
-    /// let strftime_parser = StrftimeItems::new_lossy("%Y-%Q"); // %Y: year, %Q: invalid
+    /// let strftime_parser = StrftimeItems::new_lenient("%Y-%Q"); // %Y: year, %Q: invalid
     ///
     /// const ITEMS: &[Item<'static>] = &[
     ///     Item::Numeric(Numeric::Year, Pad::Zero),
@@ -260,11 +260,11 @@ impl<'a> StrftimeItems<'a> {
     /// assert!(strftime_parser.eq(ITEMS.iter().cloned()));
     /// ```
     #[must_use]
-    pub const fn new_lossy(s: &'a str) -> StrftimeItems<'a> {
+    pub const fn new_lenient(s: &'a str) -> StrftimeItems<'a> {
         StrftimeItems {
             remainder: s,
             queue: &[],
-            lossy: true,
+            lenient: true,
             #[cfg(feature = "unstable-locales")]
             locale_str: "",
             #[cfg(feature = "unstable-locales")]
@@ -324,7 +324,7 @@ impl<'a> StrftimeItems<'a> {
         StrftimeItems {
             remainder: s,
             queue: &[],
-            lossy: false,
+            lenient: false,
             locale_str: "",
             locale: Some(locale),
         }
@@ -349,7 +349,7 @@ impl<'a> StrftimeItems<'a> {
     /// # Errors
     ///
     /// Returns an error if the format string contains an invalid or unrecognized formatting
-    /// specifier and the [`StrftimeItems`] wasn't constructed with [`new_lossy`][Self::new_lossy].
+    /// specifier and the [`StrftimeItems`] wasn't constructed with [`new_lenient`][Self::new_lenient].
     ///
     /// # Example
     ///
@@ -393,7 +393,7 @@ impl<'a> StrftimeItems<'a> {
     /// # Errors
     ///
     /// Returns an error if the format string contains an invalid or unrecognized formatting
-    /// specifier and the [`StrftimeItems`] wasn't constructed with [`new_lossy`][Self::new_lossy].
+    /// specifier and the [`StrftimeItems`] wasn't constructed with [`new_lenient`][Self::new_lenient].
     ///
     /// # Example
     ///
@@ -461,15 +461,14 @@ impl<'a> StrftimeItems<'a> {
         error_len: &mut usize,
         ch: Option<char>,
     ) -> (&'b str, Item<'b>) {
-        if let Some(c) = ch {
-            if self.lossy {
-                *error_len -= c.len_utf8();
-            }
+        if !self.lenient {
+            return (&original[*error_len..], Item::Error);
         }
-        (
-            &original[*error_len..],
-            if self.lossy { Item::Literal(&original[..*error_len]) } else { Item::Error },
-        )
+
+        if let Some(c) = ch {
+            *error_len -= c.len_utf8();
+        }
+        (&original[*error_len..], Item::Literal(&original[..*error_len]))
     }
 
     fn parse_next_item(&mut self, mut remainder: &'a str) -> Option<(&'a str, Item<'a>)> {
@@ -515,7 +514,7 @@ impl<'a> StrftimeItems<'a> {
                 let original = remainder;
                 remainder = &remainder[1..];
                 let mut error_len = 0;
-                if self.lossy {
+                if self.lenient {
                     error_len += 1;
                 }
 
@@ -524,7 +523,7 @@ impl<'a> StrftimeItems<'a> {
                         match remainder.chars().next() {
                             Some(x) => {
                                 remainder = &remainder[x.len_utf8()..];
-                                if self.lossy {
+                                if self.lenient {
                                     error_len += x.len_utf8();
                                 }
                                 x
@@ -1238,8 +1237,8 @@ mod tests {
 
     #[test]
     #[cfg(any(feature = "alloc", feature = "std"))]
-    fn test_strftime_parse_lossy() {
-        let fmt_str = StrftimeItems::new_lossy("%Y-%m-%dT%H:%M:%S%z%Q%.2f%%%");
+    fn test_strftime_parse_lenient() {
+        let fmt_str = StrftimeItems::new_lenient("%Y-%m-%dT%H:%M:%S%z%Q%.2f%%%");
         let fmt_items = fmt_str.parse().unwrap();
         let dt = Utc.with_ymd_and_hms(2014, 5, 7, 12, 34, 56).unwrap();
         assert_eq!(
