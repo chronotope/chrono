@@ -81,10 +81,8 @@ fn fallback_timezone() -> Option<TimeZone> {
     let tz_name = iana_time_zone::get_timezone().ok()?;
     #[cfg(not(any(target_os = "android", target_env = "ohos")))]
     let bytes = fs::read(format!("{}/{}", TZDB_LOCATION, tz_name)).ok()?;
-    #[cfg(target_os = "android")]
-    let bytes = crate::offset::local::tzdata::find_tz_data_android_from_fs(&tz_name).ok()??;
-    #[cfg(target_env = "ohos")]
-    let bytes = crate::offset::local::tzdata::find_tz_data_ohos_from_fs(&tz_name).ok()??;
+    #[cfg(any(target_os = "android", target_env = "ohos"))]
+    let bytes = crate::offset::local::tz_data::for_zone(&tz_name).ok()??;
     TimeZone::from_tz_data(&bytes).ok()
 }
 

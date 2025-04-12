@@ -44,21 +44,9 @@ impl TimeZone {
         }
 
         // attributes are not allowed on if blocks in Rust 1.38
-        #[cfg(target_os = "android")]
+        #[cfg(any(target_os = "android", target_env = "ohos"))]
         {
-            if let Ok(Some(bytes)) =
-                crate::offset::local::tzdata::find_tz_data_android_from_fs(tz_string)
-            {
-                return Self::from_tz_data(&bytes);
-            }
-        }
-
-        // ohos merge all file into tzdata since ver35
-        #[cfg(target_env = "ohos")]
-        {
-            if let Ok(Some(bytes)) =
-                crate::offset::local::tzdata::find_tz_data_ohos_from_fs(tz_string)
-            {
+            if let Ok(Some(bytes)) = crate::offset::local::tz_data::for_zone(tz_string) {
                 return Self::from_tz_data(&bytes);
             }
         }

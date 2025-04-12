@@ -29,7 +29,7 @@ mod inner;
 mod win_bindings;
 
 #[cfg(all(any(target_os = "android", target_env = "ohos", test), feature = "clock"))]
-mod tzdata;
+mod tz_data;
 
 #[cfg(all(
     not(unix),
