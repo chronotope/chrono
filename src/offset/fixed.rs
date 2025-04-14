@@ -201,7 +201,7 @@ mod tests {
     #[cfg(feature = "rkyv-validation")]
     fn test_rkyv_validation() {
         let offset = FixedOffset::from_str("-0500").unwrap();
-        let bytes = rkyv::to_bytes::<_, 4>(&offset).unwrap();
-        assert_eq!(rkyv::from_bytes::<FixedOffset>(&bytes).unwrap(), offset);
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&offset).unwrap();
+        assert_eq!(rkyv::from_bytes::<FixedOffset, rkyv::rancor::Error>(&bytes).unwrap(), offset);
     }
 }

@@ -355,7 +355,7 @@ mod tests {
     #[cfg(feature = "rkyv-validation")]
     fn test_rkyv_validation() {
         let month = Month::January;
-        let bytes = rkyv::to_bytes::<_, 1>(&month).unwrap();
-        assert_eq!(rkyv::from_bytes::<Month>(&bytes).unwrap(), month);
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&month).unwrap();
+        assert_eq!(rkyv::from_bytes::<Month, rkyv::rancor::Error>(&bytes).unwrap(), month);
     }
 }

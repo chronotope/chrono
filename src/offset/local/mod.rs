@@ -515,11 +515,14 @@ mod tests {
     fn test_rkyv_validation() {
         let local = Local;
         // Local is a ZST and serializes to 0 bytes
-        let bytes = rkyv::to_bytes::<_, 0>(&local).unwrap();
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&local).unwrap();
         assert_eq!(bytes.len(), 0);
 
         // but is deserialized to an archived variant without a
         // wrapping object
-        assert_eq!(rkyv::from_bytes::<Local>(&bytes).unwrap(), super::ArchivedLocal);
+        assert_eq!(
+            rkyv::from_bytes::<Local, rkyv::rancor::Error>(&bytes).unwrap(),
+            super::ArchivedLocal
+        );
     }
 }
