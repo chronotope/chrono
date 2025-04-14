@@ -33,10 +33,9 @@ use crate::OutOfRange;
 #[cfg_attr(
     any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, Debug, Hash))
+    rkyv(compare(PartialEq)),
+    rkyv(attr(derive(Clone, Copy, PartialEq, Eq, Debug, Hash)))
 )]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(arbitrary::Arbitrary))]
 pub enum Weekday {
     /// Monday.
@@ -358,8 +357,8 @@ mod tests {
     #[cfg(feature = "rkyv-validation")]
     fn test_rkyv_validation() {
         let mon = Weekday::Mon;
-        let bytes = rkyv::to_bytes::<_, 1>(&mon).unwrap();
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&mon).unwrap();
 
-        assert_eq!(rkyv::from_bytes::<Weekday>(&bytes).unwrap(), mon);
+        assert_eq!(rkyv::from_bytes::<Weekday, rkyv::rancor::Error>(&bytes).unwrap(), mon);
     }
 }

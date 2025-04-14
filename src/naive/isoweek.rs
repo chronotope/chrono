@@ -20,10 +20,9 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg_attr(
     any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+    rkyv(compare(PartialEq, PartialOrd)),
+    rkyv(attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)))
 )]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct IsoWeek {
     // Note that this allows for larger year range than `NaiveDate`.
     // This is crucial because we have an edge case for the first and last week supported,
@@ -217,11 +216,11 @@ mod tests {
     #[cfg(feature = "rkyv-validation")]
     fn test_rkyv_validation() {
         let minweek = NaiveDate::MIN.iso_week();
-        let bytes = rkyv::to_bytes::<_, 4>(&minweek).unwrap();
-        assert_eq!(rkyv::from_bytes::<IsoWeek>(&bytes).unwrap(), minweek);
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&minweek).unwrap();
+        assert_eq!(rkyv::from_bytes::<IsoWeek, rkyv::rancor::Error>(&bytes).unwrap(), minweek);
 
         let maxweek = NaiveDate::MAX.iso_week();
-        let bytes = rkyv::to_bytes::<_, 4>(&maxweek).unwrap();
-        assert_eq!(rkyv::from_bytes::<IsoWeek>(&bytes).unwrap(), maxweek);
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&maxweek).unwrap();
+        assert_eq!(rkyv::from_bytes::<IsoWeek, rkyv::rancor::Error>(&bytes).unwrap(), maxweek);
     }
 }

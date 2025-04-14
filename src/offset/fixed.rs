@@ -23,10 +23,9 @@ use crate::{Error, NaiveDateTime, ParseError};
 #[cfg_attr(
     any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug))
+    rkyv(compare(PartialEq)),
+    rkyv(attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug)))
 )]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
@@ -202,7 +201,7 @@ mod tests {
     #[cfg(feature = "rkyv-validation")]
     fn test_rkyv_validation() {
         let offset = FixedOffset::from_str("-0500").unwrap();
-        let bytes = rkyv::to_bytes::<_, 4>(&offset).unwrap();
-        assert_eq!(rkyv::from_bytes::<FixedOffset>(&bytes).unwrap(), offset);
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&offset).unwrap();
+        assert_eq!(rkyv::from_bytes::<FixedOffset, rkyv::rancor::Error>(&bytes).unwrap(), offset);
     }
 }

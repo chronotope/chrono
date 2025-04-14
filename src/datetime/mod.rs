@@ -49,9 +49,8 @@ mod tests;
 #[cfg_attr(
     any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd))
+    rkyv(compare(PartialEq, PartialOrd))
 )]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,

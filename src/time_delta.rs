@@ -51,10 +51,9 @@ const SECS_PER_WEEK: i64 = 604_800;
 #[cfg_attr(
     any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+    rkyv(compare(PartialEq, PartialOrd)),
+    rkyv(attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)))
 )]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct TimeDelta {
     secs: i64,
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
@@ -1058,7 +1057,7 @@ mod tests {
     #[cfg(feature = "rkyv-validation")]
     fn test_rkyv_validation() {
         let duration = TimeDelta::seconds(1);
-        let bytes = rkyv::to_bytes::<_, 16>(&duration).unwrap();
-        assert_eq!(rkyv::from_bytes::<TimeDelta>(&bytes).unwrap(), duration);
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&duration).unwrap();
+        assert_eq!(rkyv::from_bytes::<TimeDelta, rkyv::rancor::Error>(&bytes).unwrap(), duration);
     }
 }

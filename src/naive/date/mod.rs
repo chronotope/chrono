@@ -95,10 +95,9 @@ mod tests;
 #[cfg_attr(
     any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+    rkyv(compare(PartialEq, PartialOrd)),
+    rkyv(attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)))
 )]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct NaiveDate {
     yof: NonZeroI32, // (year << 13) | of
 }

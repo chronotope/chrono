@@ -109,10 +109,9 @@ mod tz_info;
 #[cfg_attr(
     any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq)),
-    archive_attr(derive(Clone, Copy, Debug))
+    rkyv(compare(PartialEq)),
+    rkyv(attr(derive(Clone, Copy, Debug)))
 )]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Local;
 
@@ -516,11 +515,14 @@ mod tests {
     fn test_rkyv_validation() {
         let local = Local;
         // Local is a ZST and serializes to 0 bytes
-        let bytes = rkyv::to_bytes::<_, 0>(&local).unwrap();
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&local).unwrap();
         assert_eq!(bytes.len(), 0);
 
         // but is deserialized to an archived variant without a
         // wrapping object
-        assert_eq!(rkyv::from_bytes::<Local>(&bytes).unwrap(), super::ArchivedLocal);
+        assert_eq!(
+            rkyv::from_bytes::<Local, rkyv::rancor::Error>(&bytes).unwrap(),
+            super::ArchivedLocal
+        );
     }
 }
