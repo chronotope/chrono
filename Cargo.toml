@@ -35,13 +35,13 @@ now = []
 serde = ["dep:serde"]
 # Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
 # Enable serialization/deserialization via rkyv, using 16-bit integers for integral `*size` types.
-rkyv-16 = ["dep:rkyv", "rkyv?/size_16"]
+rkyv-16 = ["dep:rkyv", "rkyv?/pointer_width_16"]
 # Enable serialization/deserialization via rkyv, using 32-bit integers for integral `*size` types.
-rkyv-32 = ["dep:rkyv", "rkyv?/size_32"]
+rkyv-32 = ["dep:rkyv", "rkyv?/pointer_width_32"]
 # Enable serialization/deserialization via rkyv, using 64-bit integers for integral `*size` types.
-rkyv-64 = ["dep:rkyv", "rkyv?/size_64"]
+rkyv-64 = ["dep:rkyv", "rkyv?/pointer_width_64"]
 # Enable rkyv validation support using `bytecheck`.
-rkyv-validation = ["dep:rkyv", "rkyv?/validation"]
+rkyv-validation = ["dep:rkyv", "rkyv?/bytecheck"]
 # Construct arbitrary instances of a type with the arbitrary crate.
 arbitrary = ["dep:arbitrary"]
 # Interface with the JS Date API for the `wasm32` target.
@@ -52,7 +52,7 @@ unstable-locales = ["dep:pure-rust-locales"]
 [dependencies]
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.8", optional = true }
-rkyv = { version = "0.7.43", default-features = false, optional = true }
+rkyv = { version = "0.8.10", default-features = false, optional = true }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
