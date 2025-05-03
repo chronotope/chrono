@@ -1,8 +1,7 @@
-use core::fmt;
-use core::num::NonZeroU64;
 use core::time::Duration;
+use core::{fmt, hash};
 
-use crate::{expect, try_opt, OutOfRange};
+use crate::{OutOfRange, expect, try_opt};
 
 /// Duration type capable of expressing a duration as a combination of multiple units.
 ///
@@ -13,7 +12,7 @@ use crate::{expect, try_opt, OutOfRange};
 /// # Components
 ///
 /// The *months* and *days* components are called components with a "nominal" durations, and can
-/// also be used to express years and weeks respectively.
+/// also be used to express years (= 12 months) and weeks (= 7 days) respectively.
 ///
 /// The *minutes*, and *seconds and nanoseconds* components are called components with an "accurate"
 /// duration. Hours can be expressed with the *minutes* component. The definition of a minute is not
@@ -32,8 +31,8 @@ use crate::{expect, try_opt, OutOfRange};
 /// |---------------------|--------------------------|
 /// | months              | `u32::MAX`               |
 /// | days                | `u32::MAX`               |
-/// | minutes and seconds | `u64::MAX >> 8` and `60` |
-/// | seconds             | `u64::MAX >> 2`          |
+/// | minutes and seconds | `u32::MAX` and `60`      |
+/// | seconds             | `u64::MAX`               |
 /// | nanoseconds         | `999_999_999`            |
 ///
 /// # Examples
@@ -58,7 +57,7 @@ pub struct CalendarDuration {
     months: u32,
     days: u32,
     // Components with an accurate duration
-    mins_and_secs: MinutesAndSeconds,
+    mins_and_secs: MinutesSeconds,
     nanos: u32,
 }
 
@@ -170,7 +169,7 @@ impl CalendarDuration {
         Self {
             months: 0,
             days: 0,
-            mins_and_secs: expect(MinutesAndSeconds::from_seconds(0), "in range"),
+            mins_and_secs: expect(MinutesSeconds::from_seconds(0), "in range"),
             nanos: 0,
         }
     }
@@ -205,7 +204,7 @@ impl CalendarDuration {
     pub const fn with_hms(mut self, hours: u64, minutes: u64, seconds: u8) -> Option<Self> {
         let minutes = try_opt!(try_opt!(hours.checked_mul(60)).checked_add(minutes));
         self.mins_and_secs =
-            try_opt!(MinutesAndSeconds::from_minutes_and_seconds(minutes, seconds as u64));
+            try_opt!(MinutesSeconds::from_minutes_and_seconds(minutes, seconds as u64));
         Some(self)
     }
 
@@ -221,7 +220,7 @@ impl CalendarDuration {
     /// Returns `None` if the value of the seconds component would be out of range.
     #[must_use]
     pub const fn with_seconds(mut self, seconds: u64) -> Option<Self> {
-        self.mins_and_secs = try_opt!(MinutesAndSeconds::from_seconds(seconds));
+        self.mins_and_secs = try_opt!(MinutesSeconds::from_seconds(seconds));
         Some(self)
     }
 
@@ -282,38 +281,69 @@ impl TryFrom<Duration> for CalendarDuration {
 /// We don't allow having both an `u64` with minutes and an `u64` with seconds.
 /// Having two components in a `CalendarDuration` whose only subtle difference is how they behave
 /// around leap seconds will make the type unintuitive.
-///
-/// # Encoding
-///
-/// - Seconds:                                     `seconds << 2 | 0b10`
-/// - Minutes and up to 60 seconds: `minutes << 8 | seconds << 2 | 0b11`
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-struct MinutesAndSeconds(NonZeroU64);
+#[derive(Clone, Copy, Eq)]
+enum MinutesSeconds {
+    Seconds { seconds: u64 },
+    MinutesSeconds { minutes: u32, seconds: u8 },
+}
 
-impl MinutesAndSeconds {
-    const fn from_seconds(secs: u64) -> Option<Self> {
-        if secs >= (1 << 62) {
-            return None;
+impl PartialEq for MinutesSeconds {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Seconds { seconds }, Self::Seconds { seconds: other_seconds }) => {
+                seconds == other_seconds
+            }
+            (
+                Self::MinutesSeconds { minutes, seconds },
+                Self::MinutesSeconds { minutes: other_minutes, seconds: other_seconds },
+            ) => minutes == other_minutes && seconds == other_seconds,
+            (
+                Self::Seconds { seconds: other_seconds },
+                Self::MinutesSeconds { minutes, seconds },
+            )
+            | (
+                Self::MinutesSeconds { minutes, seconds },
+                Self::Seconds { seconds: other_seconds },
+            ) => *minutes == 0 && *seconds as u64 == *other_seconds,
         }
-        Some(Self(expect(NonZeroU64::new(secs << 2 | 0b10), "can't fail, non-zero")))
+    }
+}
+
+impl hash::Hash for MinutesSeconds {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Seconds { seconds } => seconds.hash(state),
+            Self::MinutesSeconds { minutes, seconds } => {
+                if *minutes == 0 {
+                    seconds.hash(state);
+                } else {
+                    minutes.hash(state);
+                    seconds.hash(state);
+                }
+            }
+        }
+    }
+}
+
+impl MinutesSeconds {
+    const fn from_seconds(secs: u64) -> Option<Self> {
+        Some(MinutesSeconds::Seconds { seconds: secs })
     }
 
-    const fn from_minutes_and_seconds(mins: u64, secs: u64) -> Option<Self> {
-        if mins >= (1 << 56) || secs > 60 {
+    const fn from_minutes_and_seconds(minutes: u64, seconds: u64) -> Option<Self> {
+        if minutes > u32::MAX as u64 || seconds > 60 {
             return None;
         }
-        // The `(mins > 0) as u64` causes a value without minutes to have the same encoding as
-        // one created with `from_seconds`.
-        let val = mins << 8 | secs << 2 | (mins > 0) as u64 | 0b10;
-        Some(Self(expect(NonZeroU64::new(val), "can't fail, non-zero")))
+        Some(MinutesSeconds::MinutesSeconds { minutes: minutes as u32, seconds: seconds as u8 })
     }
 
     /// Returns the `minutes` and `seconds` components.
     const fn mins_and_secs(&self) -> (u64, u64) {
-        let value = self.0.get();
-        match value & 0b01 == 0 {
-            true => (0, value >> 2),
-            false => (value >> 8, (value >> 2) & 0b11_1111),
+        match self {
+            MinutesSeconds::Seconds { seconds } => (0, *seconds),
+            MinutesSeconds::MinutesSeconds { minutes, seconds } => {
+                (*minutes as u64, *seconds as u64)
+            }
         }
     }
 }
@@ -355,7 +385,7 @@ mod tests {
 
     #[test]
     fn test_invalid_returns_none() {
-        const MAX_MINUTES: u64 = u64::MAX >> 8;
+        const MAX_MINUTES: u64 = u32::MAX as u64;
         const MAX_HOURS: u64 = MAX_MINUTES / 60;
         assert!(CalendarDuration::new().with_hms(100, 100, 60).is_some());
         assert!(CalendarDuration::new().with_hms(0, 0, 61).is_none());
@@ -368,11 +398,9 @@ mod tests {
         assert!(CalendarDuration::new().with_hms(0, u64::MAX, 0).is_none());
         assert!(CalendarDuration::new().with_hms(0, 0, u8::MAX).is_none());
 
-        const MAX_SECONDS: u64 = u64::MAX >> 2;
+        const MAX_SECONDS: u64 = u64::MAX;
         assert!(CalendarDuration::new().with_seconds(100).is_some());
         assert!(CalendarDuration::new().with_seconds(MAX_SECONDS).is_some());
-        assert!(CalendarDuration::new().with_seconds(MAX_SECONDS + 1).is_none());
-        assert!(CalendarDuration::new().with_seconds(u64::MAX).is_none());
 
         assert!(CalendarDuration::new().with_nanos(1_000_000_000).is_none());
         assert!(CalendarDuration::new().with_nanos(u32::MAX).is_none());
@@ -396,7 +424,7 @@ mod tests {
 
     #[test]
     fn test_try_from_extreme_duration() {
-        assert!(CalendarDuration::try_from(Duration::new(1 << 62, 0)).is_err());
+        assert!(CalendarDuration::try_from(Duration::new(1 << 62, 0)).is_ok());
     }
 
     #[test]
