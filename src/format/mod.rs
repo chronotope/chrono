@@ -56,7 +56,7 @@ pub(crate) mod locales;
 
 pub use formatting::SecondsFormat;
 pub(crate) use formatting::write_hundreds;
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", feature = "serde"))]
 pub(crate) use formatting::write_rfc2822;
 #[cfg(any(feature = "alloc", feature = "serde"))]
 pub(crate) use formatting::write_rfc3339;
