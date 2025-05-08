@@ -46,6 +46,26 @@ pub use self::utc::Utc;
 ///   DST.
 /// * No result when the clock is turned forwards during a transition due to for example DST.
 ///
+/// <div class="warning">
+///
+/// In wasm, when using [`Local`], only the [`LocalResult::Single`] variant is returned.
+/// Specifically:
+///
+/// * When the clock is turned backwards, where `Ambiguous(earliest, latest)` would be expected,
+///   `Single(earliest)` is returned instead.
+/// * When the clock is turned forwards, where `None` would be expected, `Single(t)` is returned,
+///   with `t` being the requested local time represented as though there is no transition on that
+///   day (i.e. still "summer time")
+///
+/// This is caused because of limitations in the JavaScript
+/// [`Date`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)
+/// API, which always parses a local time as a single, valid time - even for an
+/// input which describes a nonexistent or ambiguous time.
+///
+/// See further discussion and workarounds in <https://github.com/chronotope/chrono/issues/1701>.
+///
+/// </div>
+///
 /// When the clock is turned backwards it creates a _fold_ in local time, during which the local
 /// time is _ambiguous_. When the clock is turned forwards it creates a _gap_ in local time, during
 /// which the local time is _missing_, or does not exist.
