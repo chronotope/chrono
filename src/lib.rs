@@ -645,7 +645,7 @@ pub mod serde {
                     write!(f, "value is not a legal timestamp: {ts}")
                 }
                 Self::InvalidTimeDelta(td) => {
-                    write!(f, "value is not a legal timedelta: {td}")
+                    write!(f, "value is not a legal TimeDelta: {td}")
                 }
             }
         }

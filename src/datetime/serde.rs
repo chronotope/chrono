@@ -1214,7 +1214,7 @@ pub mod ts_seconds_option {
     }
 }
 
-/// Ser/de to/from timedeltas in nanoseconds
+/// Ser/de to/from [`crate::TimeDelta`]s in nanoseconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -1254,7 +1254,7 @@ pub mod td_nanoseconds {
     ///
     /// # Errors
     ///
-    /// This function returns an error on an out of range `TimeDelta`.
+    /// This function returns an error on an out of range [`TimeDelta`].
     ///
     /// # Example:
     ///
@@ -1280,7 +1280,7 @@ pub mod td_nanoseconds {
         S: ser::Serializer,
     {
         serializer.serialize_i64(td.num_nanoseconds().ok_or(ser::Error::custom(
-            "value out of range for a timedelta with nanosecond precision",
+            "value out of range for a TimeDelta with nanosecond precision",
         ))?)
     }
 
@@ -1315,10 +1315,10 @@ pub mod td_nanoseconds {
         type Value = TimeDelta;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a timedelta in nanoseconds")
+            formatter.write_str("a TimeDelta in nanoseconds")
         }
 
-        /// Deserialize a timedelta in nanoseconds
+        /// Deserialize a [`TimeDelta`] in nanoseconds
         fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1326,7 +1326,7 @@ pub mod td_nanoseconds {
             Ok(TimeDelta::nanoseconds(value))
         }
 
-        /// Deserialize a timedelta in nanoseconds
+        /// Deserialize a [`TimeDelta`] in nanoseconds
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1336,7 +1336,7 @@ pub mod td_nanoseconds {
     }
 }
 
-/// Ser/de to/from optional timedeltas in nanoseconds
+/// Ser/de to/from optional [`crate::TimeDelta`]s in nanoseconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -1402,7 +1402,7 @@ pub mod td_nanoseconds_option {
     {
         match *opt {
             Some(ref td) => serializer.serialize_some(&td.num_nanoseconds().ok_or(
-                ser::Error::custom("value out of range for a timedelta with nanosecond precision"),
+                ser::Error::custom("value out of range for a TimeDelta with nanosecond precision"),
             )?),
             None => serializer.serialize_none(),
         }
@@ -1441,10 +1441,10 @@ pub mod td_nanoseconds_option {
         type Value = Option<TimeDelta>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a timedelta in nanoseconds or none")
+            formatter.write_str("a TimeDelta in nanoseconds or none")
         }
 
-        /// Deserialize a timedelta in nanoseconds
+        /// Deserialize a [`TimeDelta`] in nanoseconds
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -1452,7 +1452,7 @@ pub mod td_nanoseconds_option {
             d.deserialize_i64(NanoSecondsTimeDeltaVisitor).map(Some)
         }
 
-        /// Deserialize a timedelta in nanoseconds
+        /// Deserialize a [`TimeDelta`] in nanoseconds
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1460,7 +1460,7 @@ pub mod td_nanoseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timedelta in nanoseconds
+        /// Deserialize a [`TimeDelta`] in nanoseconds
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1470,7 +1470,7 @@ pub mod td_nanoseconds_option {
     }
 }
 
-/// Ser/de to/from timedeltas in microseconds
+/// Ser/de to/from [`crate::TimeDelta`]s in microseconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -1510,7 +1510,7 @@ pub mod td_microseconds {
     ///
     /// # Errors
     ///
-    /// This function returns an error on an out of range `TimeDelta`.
+    /// This function returns an error on an out of range [`TimeDelta`].
     ///
     /// # Example:
     ///
@@ -1536,7 +1536,7 @@ pub mod td_microseconds {
         S: ser::Serializer,
     {
         serializer.serialize_i64(td.num_microseconds().ok_or(ser::Error::custom(
-            "value out of range for a timedelta with microsecond precision",
+            "value out of range for a TimeDelta with microsecond precision",
         ))?)
     }
 
@@ -1571,10 +1571,10 @@ pub mod td_microseconds {
         type Value = TimeDelta;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a timedelta in microseconds")
+            formatter.write_str("a TimeDelta in microseconds")
         }
 
-        /// Deserialize a timedelta in microseconds
+        /// Deserialize a [`TimeDelta`] in microseconds
         fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1582,7 +1582,7 @@ pub mod td_microseconds {
             Ok(TimeDelta::microseconds(value))
         }
 
-        /// Deserialize a timedelta in microseconds
+        /// Deserialize a [`TimeDelta`] in microseconds
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1592,7 +1592,7 @@ pub mod td_microseconds {
     }
 }
 
-/// Ser/de to/from optional timedeltas in microseconds
+/// Ser/de to/from optional [`crate::TimeDelta`]s in microseconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -1658,7 +1658,7 @@ pub mod td_microseconds_option {
     {
         match *opt {
             Some(ref td) => serializer.serialize_some(&td.num_microseconds().ok_or(
-                ser::Error::custom("value out of range for a timedelta with microsecond precision"),
+                ser::Error::custom("value out of range for a TimeDelta with microsecond precision"),
             )?),
             None => serializer.serialize_none(),
         }
@@ -1697,10 +1697,10 @@ pub mod td_microseconds_option {
         type Value = Option<TimeDelta>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a timedelta in microseconds or none")
+            formatter.write_str("a TimeDelta in microseconds or none")
         }
 
-        /// Deserialize a timedelta in microseconds
+        /// Deserialize a [`TimeDelta`] in microseconds
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -1708,7 +1708,7 @@ pub mod td_microseconds_option {
             d.deserialize_i64(MicroSecondsTimeDeltaVisitor).map(Some)
         }
 
-        /// Deserialize a timedelta in microseconds
+        /// Deserialize a [`TimeDelta`] in microseconds
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1716,7 +1716,7 @@ pub mod td_microseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timedelta in microseconds
+        /// Deserialize a [`TimeDelta`] in microseconds
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1726,7 +1726,7 @@ pub mod td_microseconds_option {
     }
 }
 
-/// Ser/de to/from timedeltas in milliseconds
+/// Ser/de to/from [`crate::TimeDelta`]s in milliseconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -1766,7 +1766,7 @@ pub mod td_milliseconds {
     ///
     /// # Errors
     ///
-    /// This function returns an error on an out of range `TimeDelta`.
+    /// This function returns an error on an out of range [`TimeDelta`].
     ///
     /// # Example:
     ///
@@ -1825,10 +1825,10 @@ pub mod td_milliseconds {
         type Value = TimeDelta;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a timedelta in milliseconds")
+            formatter.write_str("a TimeDelta in milliseconds")
         }
 
-        /// Deserialize a timedelta in milliseconds
+        /// Deserialize a [`TimeDelta`] in milliseconds
         fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1836,7 +1836,7 @@ pub mod td_milliseconds {
             Ok(TimeDelta::milliseconds(value))
         }
 
-        /// Deserialize a timedelta in milliseconds
+        /// Deserialize a [`TimeDelta`] in milliseconds
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1846,7 +1846,7 @@ pub mod td_milliseconds {
     }
 }
 
-/// Ser/de to/from optional timedeltas in milliseconds
+/// Ser/de to/from optional [`crate::TimeDelta`]s in milliseconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -1949,10 +1949,10 @@ pub mod td_milliseconds_option {
         type Value = Option<TimeDelta>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a timedelta in milliseconds or none")
+            formatter.write_str("a TimeDelta in milliseconds or none")
         }
 
-        /// Deserialize a timedelta in milliseconds
+        /// Deserialize a [`TimeDelta`] in milliseconds
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -1960,7 +1960,7 @@ pub mod td_milliseconds_option {
             d.deserialize_i64(MilliSecondsTimeDeltaVisitor).map(Some)
         }
 
-        /// Deserialize a timedelta in milliseconds
+        /// Deserialize a [`TimeDelta`] in milliseconds
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1968,7 +1968,7 @@ pub mod td_milliseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timedelta in milliseconds
+        /// Deserialize a [`TimeDelta`] in milliseconds
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1978,7 +1978,7 @@ pub mod td_milliseconds_option {
     }
 }
 
-/// Ser/de to/from timedeltas in seconds
+/// Ser/de to/from [`crate::TimeDelta`]s in seconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -2018,7 +2018,7 @@ pub mod td_seconds {
     ///
     /// # Errors
     ///
-    /// This function returns an error on an out of range `TimeDelta`.
+    /// This function returns an error on an out of range [`TimeDelta`].
     ///
     /// # Example:
     ///
@@ -2077,10 +2077,10 @@ pub mod td_seconds {
         type Value = TimeDelta;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a timedelta in seconds")
+            formatter.write_str("a TimeDelta in seconds")
         }
 
-        /// Deserialize a timedelta in seconds
+        /// Deserialize a [`TimeDelta`] in seconds
         fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -2088,7 +2088,7 @@ pub mod td_seconds {
             Ok(TimeDelta::seconds(value))
         }
 
-        /// Deserialize a timedelta in seconds
+        /// Deserialize a [`TimeDelta`] in seconds
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -2098,7 +2098,7 @@ pub mod td_seconds {
     }
 }
 
-/// Ser/de to/from optional timedeltas in seconds
+/// Ser/de to/from optional [`crate::TimeDelta`]s in seconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -2201,10 +2201,10 @@ pub mod td_seconds_option {
         type Value = Option<TimeDelta>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a timedelta in seconds or none")
+            formatter.write_str("a TimeDelta in seconds or none")
         }
 
-        /// Deserialize a timedelta in seconds
+        /// Deserialize a [`TimeDelta`] in seconds
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -2212,7 +2212,7 @@ pub mod td_seconds_option {
             d.deserialize_i64(SecondsTimeDeltaVisitor).map(Some)
         }
 
-        /// Deserialize a timedelta in seconds
+        /// Deserialize a [`TimeDelta`] in seconds
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -2220,7 +2220,7 @@ pub mod td_seconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timedelta in seconds
+        /// Deserialize a [`TimeDelta`] in seconds
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
