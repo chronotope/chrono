@@ -1238,7 +1238,7 @@ pub mod ts_seconds_option {
 ///     delta: TimeDelta,
 /// }
 ///
-/// let time = TimeDelta::nanoseconds(2018517);
+/// let delta = TimeDelta::nanoseconds(2018517);
 /// let my_s = S { delta: delta.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -1351,7 +1351,7 @@ pub mod td_nanoseconds {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::Delta;
+/// # use chrono::TimeDelta;
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::td_nanoseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -1401,7 +1401,7 @@ pub mod td_nanoseconds_option {
     ///     delta: Some(TimeDelta::nanoseconds(2018517)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
-    /// assert_eq!(as_string, r#"{"time":2018517}"#);
+    /// assert_eq!(as_string, r#"{"delta":2018517}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<TimeDelta>, serializer: S) -> Result<S::Ok, S::Error>
@@ -1433,7 +1433,7 @@ pub mod td_nanoseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
-    /// assert_eq!(my_s, S { delta: TimeDelta::nanoseconds(2018517) });
+    /// assert_eq!(my_s, S { delta: Some(TimeDelta::nanoseconds(2018517)) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<TimeDelta>, D::Error>
@@ -1494,7 +1494,7 @@ pub mod td_nanoseconds_option {
 ///     delta: TimeDelta,
 /// }
 ///
-/// let time = TimeDelta::microseconds(2018517);
+/// let delta = TimeDelta::microseconds(2018517);
 /// let my_s = S { delta: delta.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -1607,7 +1607,7 @@ pub mod td_microseconds {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::Delta;
+/// # use chrono::TimeDelta;
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::td_microseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -1657,7 +1657,7 @@ pub mod td_microseconds_option {
     ///     delta: Some(TimeDelta::microseconds(2018517)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
-    /// assert_eq!(as_string, r#"{"time":2018517}"#);
+    /// assert_eq!(as_string, r#"{"delta":2018517}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<TimeDelta>, serializer: S) -> Result<S::Ok, S::Error>
@@ -1689,7 +1689,7 @@ pub mod td_microseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
-    /// assert_eq!(my_s, S { delta: TimeDelta::microseconds(2018517) });
+    /// assert_eq!(my_s, S { delta: Some(TimeDelta::microseconds(2018517)) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<TimeDelta>, D::Error>
@@ -1750,7 +1750,7 @@ pub mod td_microseconds_option {
 ///     delta: TimeDelta,
 /// }
 ///
-/// let time = TimeDelta::milliseconds(2018517);
+/// let delta = TimeDelta::milliseconds(2018517);
 /// let my_s = S { delta: delta.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -1861,7 +1861,7 @@ pub mod td_milliseconds {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::Delta;
+/// # use chrono::TimeDelta;
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::td_milliseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -1911,7 +1911,7 @@ pub mod td_milliseconds_option {
     ///     delta: Some(TimeDelta::milliseconds(2018517)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
-    /// assert_eq!(as_string, r#"{"time":2018517}"#);
+    /// assert_eq!(as_string, r#"{"delta":2018517}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<TimeDelta>, serializer: S) -> Result<S::Ok, S::Error>
@@ -1941,7 +1941,7 @@ pub mod td_milliseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
-    /// assert_eq!(my_s, S { delta: TimeDelta::milliseconds(2018517) });
+    /// assert_eq!(my_s, S { delta: Some(TimeDelta::milliseconds(2018517)) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<TimeDelta>, D::Error>
@@ -2002,7 +2002,7 @@ pub mod td_milliseconds_option {
 ///     delta: TimeDelta,
 /// }
 ///
-/// let time = TimeDelta::seconds(2018517);
+/// let delta = TimeDelta::seconds(2018517);
 /// let my_s = S { delta: delta.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -2113,7 +2113,7 @@ pub mod td_seconds {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::Delta;
+/// # use chrono::TimeDelta;
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::td_seconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -2163,7 +2163,7 @@ pub mod td_seconds_option {
     ///     delta: Some(TimeDelta::seconds(2018517)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
-    /// assert_eq!(as_string, r#"{"time":2018517}"#);
+    /// assert_eq!(as_string, r#"{"delta":2018517}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<TimeDelta>, serializer: S) -> Result<S::Ok, S::Error>
@@ -2193,7 +2193,7 @@ pub mod td_seconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "delta": 2018517 }"#)?;
-    /// assert_eq!(my_s, S { delta: TimeDelta::seconds(2018517) });
+    /// assert_eq!(my_s, S { delta: Some(TimeDelta::seconds(2018517)) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<TimeDelta>, D::Error>
