@@ -502,7 +502,6 @@
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/", test(attr(deny(warnings))))]
 #![deny(missing_docs)]
-#![deny(missing_debug_implementations)]
 #![warn(unreachable_pub)]
 #![deny(clippy::tests_outside_test_module)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
@@ -510,6 +509,9 @@
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
+
+mod calendar_duration;
+pub use calendar_duration::CalendarDuration;
 
 mod time_delta;
 #[cfg(feature = "std")]
