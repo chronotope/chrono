@@ -417,9 +417,30 @@ where
                         s = &s[2..];
                     }
 
-                    &Nanosecond | &Nanosecond3 | &Nanosecond6 | &Nanosecond9 => {
+                    &Nanosecond => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
+                            parsed.set_nanosecond(nano)?;
+                        }
+                    }
+
+                    &Nanosecond3 => {
+                        if s.starts_with('.') {
+                            let nano = try_consume!(scan::nanosecond_fixed(&s[1..], 3));
+                            parsed.set_nanosecond(nano)?;
+                        }
+                    }
+
+                    &Nanosecond6 => {
+                        if s.starts_with('.') {
+                            let nano = try_consume!(scan::nanosecond_fixed(&s[1..], 6));
+                            parsed.set_nanosecond(nano)?;
+                        }
+                    }
+
+                    &Nanosecond9 => {
+                        if s.starts_with('.') {
+                            let nano = try_consume!(scan::nanosecond_fixed(&s[1..], 9));
                             parsed.set_nanosecond(nano)?;
                         }
                     }
@@ -910,7 +931,7 @@ mod tests {
 
     #[test]
     fn test_parse_fixed_nanosecond() {
-        use crate::format::Fixed::Nanosecond;
+        use crate::format::Fixed::{Nanosecond, Nanosecond3, Nanosecond6, Nanosecond9};
         use crate::format::InternalInternal::*;
         use crate::format::Item::Literal;
         use crate::format::Numeric::Second;
@@ -943,6 +964,28 @@ mod tests {
         check(".4x", &[fixed(Nanosecond)], Err(TOO_LONG));
         check(".  4", &[fixed(Nanosecond)], Err(INVALID));
         check("  .4", &[fixed(Nanosecond)], Err(TOO_LONG)); // no automatic trimming
+
+        // fixed-length fractions of a second
+        check("", &[fixed(Nanosecond3)], parsed!()); // no field set, but not an error
+        check("4", &[fixed(Nanosecond3)], Err(TOO_LONG)); // never consumes `4`
+        check(".12", &[fixed(Nanosecond3)], Err(TOO_SHORT));
+        check(".123", &[fixed(Nanosecond3)], parsed!(nanosecond: 123_000_000));
+        check(".1234", &[fixed(Nanosecond3)], Err(TOO_LONG));
+        check(".1234", &[fixed(Nanosecond3), Literal("4")], parsed!(nanosecond: 123_000_000));
+
+        check("", &[fixed(Nanosecond6)], parsed!()); // no field set, but not an error
+        check("4", &[fixed(Nanosecond6)], Err(TOO_LONG)); // never consumes `4`
+        check(".12345", &[fixed(Nanosecond6)], Err(TOO_SHORT));
+        check(".123456", &[fixed(Nanosecond6)], parsed!(nanosecond: 123_456_000));
+        check(".1234567", &[fixed(Nanosecond6)], Err(TOO_LONG));
+        check(".1234567", &[fixed(Nanosecond6), Literal("7")], parsed!(nanosecond: 123_456_000));
+
+        check("", &[fixed(Nanosecond9)], parsed!()); // no field set, but not an error
+        check("4", &[fixed(Nanosecond9)], Err(TOO_LONG)); // never consumes `4`
+        check(".12345678", &[fixed(Nanosecond9)], Err(TOO_SHORT));
+        check(".123456789", &[fixed(Nanosecond9)], parsed!(nanosecond: 123_456_789));
+        check(".1234567890", &[fixed(Nanosecond9)], Err(TOO_LONG));
+        check(".1234567890", &[fixed(Nanosecond9), Literal("0")], parsed!(nanosecond: 123_456_789));
 
         // fixed: nanoseconds without the dot
         check("", &[internal_fixed(Nanosecond3NoDot)], Err(TOO_SHORT));
