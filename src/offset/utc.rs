@@ -9,7 +9,7 @@ use core::fmt;
     not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
+        not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
     ))
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -89,7 +89,7 @@ impl Utc {
     #[cfg(not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
+        not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
     )))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
@@ -102,7 +102,7 @@ impl Utc {
     #[cfg(all(
         target_arch = "wasm32",
         feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
+        not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
     ))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
