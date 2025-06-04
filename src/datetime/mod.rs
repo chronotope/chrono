@@ -1881,7 +1881,7 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
 #[cfg(all(
     target_arch = "wasm32",
     feature = "wasmbind",
-    not(any(target_os = "emscripten", target_os = "wasi"))
+    not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
 ))]
 impl From<js_sys::Date> for DateTime<Utc> {
     fn from(date: js_sys::Date) -> DateTime<Utc> {
@@ -1892,7 +1892,7 @@ impl From<js_sys::Date> for DateTime<Utc> {
 #[cfg(all(
     target_arch = "wasm32",
     feature = "wasmbind",
-    not(any(target_os = "emscripten", target_os = "wasi"))
+    not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
 ))]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
@@ -1903,7 +1903,7 @@ impl From<&js_sys::Date> for DateTime<Utc> {
 #[cfg(all(
     target_arch = "wasm32",
     feature = "wasmbind",
-    not(any(target_os = "emscripten", target_os = "wasi"))
+    not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
 ))]
 impl From<DateTime<Utc>> for js_sys::Date {
     /// Converts a `DateTime<Utc>` to a JS `Date`. The resulting value may be lossy,
