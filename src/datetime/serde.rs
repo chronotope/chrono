@@ -2241,7 +2241,7 @@ pub mod td_seconds_option {
 mod tests {
     #[cfg(feature = "clock")]
     use crate::Local;
-    use crate::{DateTime, FixedOffset, TimeZone, Utc};
+    use crate::{DateTime, FixedOffset, TimeDelta, TimeZone, Utc};
     use core::fmt;
 
     #[test]
@@ -2386,5 +2386,36 @@ mod tests {
         let decoded: DateTime<FixedOffset> = serde_json::from_str(&encoded).unwrap();
         assert_eq!(dt, decoded);
         assert_eq!(dt.offset().fix(), *decoded.offset());
+    }
+
+    #[test]
+    fn test_serde_td_nanoseconds() {
+        let delta1 = TimeDelta::nanoseconds(2018517);
+
+        let mut bytes = Vec::new();
+        let mut serializer = serde_json::Serializer::new(&mut bytes);
+
+        assert!(super::td_nanoseconds::serialize(&delta1, &mut serializer).is_ok());
+
+        let delta2 =
+            super::td_nanoseconds::deserialize(&mut serde_json::Deserializer::from_slice(&bytes));
+
+        assert_eq!(Some(delta1), delta2.ok());
+    }
+
+    #[test]
+    fn test_serde_td_microseconds_zero() {
+        let delta =
+            super::td_microseconds::deserialize(&mut serde_json::Deserializer::from_str("0"));
+
+        assert_eq!(Some(TimeDelta::zero()), delta.ok());
+    }
+
+    #[test]
+    fn test_serde_td_seconds_option_null() {
+        let delta =
+            super::td_seconds_option::deserialize(&mut serde_json::Deserializer::from_str("null"));
+
+        assert_eq!(Some(None), delta.ok());
     }
 }
