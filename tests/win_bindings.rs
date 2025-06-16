@@ -9,7 +9,7 @@ fn gen_bindings() {
     let output = "src/offset/local/win_bindings.rs";
     let existing = fs::read_to_string(output).unwrap();
 
-    bindgen(["--no-deps", "--etc", input]);
+    bindgen(["--no-deps", "--etc", input]).unwrap();
 
     // Check the output is the same as before.
     // Depending on the git configuration the file may have been checked out with `\r\n` newlines or
