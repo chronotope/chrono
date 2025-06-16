@@ -23,7 +23,7 @@ alloc = []
 libc = []
 winapi = ["windows-link"]
 std = ["alloc"]
-clock = ["winapi", "iana-time-zone", "android-tzdata", "now"]
+clock = ["winapi", "iana-time-zone", "now"]
 now = ["std"]
 oldtime = []
 wasmbind = ["wasm-bindgen", "js-sys"]
@@ -56,9 +56,6 @@ windows-bindgen = { version = "0.62" } # MSRV is 1.74
 
 [target.'cfg(unix)'.dependencies]
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
-
-[target.'cfg(target_os = "android")'.dependencies]
-android-tzdata = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1" }
