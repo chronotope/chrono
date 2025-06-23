@@ -1102,7 +1102,7 @@ where
     #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I, Tz::Offset>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
@@ -1126,7 +1126,7 @@ where
     #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
+    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>, Tz::Offset> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
@@ -1138,7 +1138,7 @@ where
         &self,
         items: I,
         locale: Locale,
-    ) -> DelayedFormat<I>
+    ) -> DelayedFormat<I, Tz::Offset>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
@@ -1165,7 +1165,7 @@ where
         &self,
         fmt: &'a str,
         locale: Locale,
-    ) -> DelayedFormat<StrftimeItems<'a>> {
+    ) -> DelayedFormat<StrftimeItems<'a>, Tz::Offset> {
         self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
     }
 }
