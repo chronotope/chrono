@@ -72,7 +72,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// parsed.set_second(40)?;
 /// parsed.set_offset(0)?;
 /// let dt = parsed.to_datetime()?;
-/// assert_eq!(dt.to_rfc2822(), "Wed, 31 Dec 2014 04:26:40 +0000");
+/// assert_eq!(dt.try_to_rfc2822().unwrap(), "Wed, 31 Dec 2014 04:26:40 +0000");
 ///
 /// let mut parsed = Parsed::new();
 /// parsed.set_weekday(Weekday::Thu)?; // changed to the wrong day
@@ -110,7 +110,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// parse(&mut parsed, "Wed, 31 Dec 2014 04:26:40 +0000", rfc_2822.iter())?;
 /// let dt = parsed.to_datetime()?;
 ///
-/// assert_eq!(dt.to_rfc2822(), "Wed, 31 Dec 2014 04:26:40 +0000");
+/// assert_eq!(dt.try_to_rfc2822().unwrap(), "Wed, 31 Dec 2014 04:26:40 +0000");
 ///
 /// let mut parsed = Parsed::new();
 /// parse(&mut parsed, "Thu, 31 Dec 2014 04:26:40 +0000", rfc_2822.iter())?;

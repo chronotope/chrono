@@ -56,7 +56,9 @@ fn bench_datetime_to_rfc2822(c: &mut Criterion) {
                 .unwrap(),
         )
         .unwrap();
-    c.bench_function("bench_datetime_to_rfc2822", |b| b.iter(|| black_box(dt).to_rfc2822()));
+    c.bench_function("bench_datetime_to_rfc2822", |b| {
+        b.iter(|| black_box(dt).try_to_rfc2822().unwrap())
+    });
 }
 
 fn bench_datetime_to_rfc3339(c: &mut Criterion) {
