@@ -371,11 +371,18 @@ where
                     } else if s.starts_with('+') {
                         try_consume!(scan::number(&s[1..], 1, usize::MAX))
                     } else {
-                        // if there is no explicit sign, we respect the original `width`
+                        // Signed value with no sign — variable width (legacy behavior)
                         try_consume!(scan::number(s, 1, width))
                     }
                 } else {
-                    try_consume!(scan::number(s, 1, width))
+                    // Enforce exact width for unsigned values like %H, %M, %S
+                    if s.len() < width {
+                        return Err(TOO_SHORT);
+                    }
+                    let (val_str, rest) = s.split_at(width);
+                    let val = val_str.parse::<i64>().map_err(|_| INVALID)?;
+                    s = rest;
+                    val
                 };
                 set(parsed, v)?;
             }
