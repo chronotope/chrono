@@ -123,7 +123,7 @@ impl fmt::Debug for YearFlags {
             0o07 => "FE".fmt(f),
             0o16 => "G".fmt(f),
             0o06 => "GF".fmt(f),
-            _ => write!(f, "YearFlags({})", flags),
+            _ => write!(f, "YearFlags({flags})"),
         }
     }
 }
@@ -430,7 +430,7 @@ mod tests {
                     let mdf = match Mdf::new(month, day, flags) {
                         Some(mdf) => mdf,
                         None if !expected => continue,
-                        None => panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags),
+                        None => panic!("Mdf::new({month}, {day}, {flags:?}) returned None"),
                     };
 
                     assert!(
@@ -541,7 +541,7 @@ mod tests {
                 let mdf = match mdf.with_month(month) {
                     Some(mdf) => mdf,
                     None if month > 12 => continue,
-                    None => panic!("failed to create Mdf with month {}", month),
+                    None => panic!("failed to create Mdf with month {month}"),
                 };
 
                 if mdf.valid() {
@@ -554,7 +554,7 @@ mod tests {
                 let mdf = match mdf.with_day(day) {
                     Some(mdf) => mdf,
                     None if day > 31 => continue,
-                    None => panic!("failed to create Mdf with month {}", month),
+                    None => panic!("failed to create Mdf with month {month}"),
                 };
 
                 if mdf.valid() {

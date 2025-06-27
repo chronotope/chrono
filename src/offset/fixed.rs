@@ -161,9 +161,9 @@ impl fmt::Debug for FixedOffset {
         let min = mins.rem_euclid(60);
         let hour = mins.div_euclid(60);
         if sec == 0 {
-            write!(f, "{}{:02}:{:02}", sign, hour, min)
+            write!(f, "{sign}{hour:02}:{min:02}")
         } else {
-            write!(f, "{}{:02}:{:02}:{:02}", sign, hour, min, sec)
+            write!(f, "{sign}{hour:02}:{min:02}:{sec:02}")
         }
     }
 }

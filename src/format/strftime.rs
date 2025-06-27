@@ -794,7 +794,7 @@ mod tests {
     fn test_strftime_items() {
         fn parse_and_collect(s: &str) -> Vec<Item<'_>> {
             // map any error into `[Item::Error]`. useful for easy testing.
-            eprintln!("test_strftime_items: parse_and_collect({:?})", s);
+            eprintln!("test_strftime_items: parse_and_collect({s:?})");
             let items = StrftimeItems::new(s);
             let items = items.map(|spec| if spec == Item::Error { None } else { Some(spec) });
             items.collect::<Option<Vec<_>>>().unwrap_or_else(|| vec![Item::Error])

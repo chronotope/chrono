@@ -1720,13 +1720,12 @@ mod tests {
         // Test against test data above
         for &(date, checkdate) in testdates.iter() {
             #[cfg(feature = "std")]
-            eprintln!("Test input: {:?}\n    Expect: {:?}", date, checkdate);
+            eprintln!("Test input: {date:?}\n    Expect: {checkdate:?}");
             let dt = rfc2822_to_datetime(date); // parse a date
             if dt != checkdate {
                 // check for expected result
                 panic!(
-                    "Date conversion failed for {}\nReceived: {:?}\nExpected: {:?}",
-                    date, dt, checkdate
+                    "Date conversion failed for {date}\nReceived: {dt:?}\nExpected: {checkdate:?}"
                 );
             }
         }
@@ -1879,8 +1878,7 @@ mod tests {
             if dt != checkdate {
                 // check for expected result
                 panic!(
-                    "Date conversion failed for {}\nReceived: {:?}\nExpected: {:?}",
-                    date, dt, checkdate
+                    "Date conversion failed for {date}\nReceived: {dt:?}\nExpected: {checkdate:?}"
                 );
             }
         }

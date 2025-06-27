@@ -283,26 +283,23 @@ fn test_time_from_str() {
         "23:59:60.373929310237",
     ];
     for &s in &valid {
-        eprintln!("test_time_parse_from_str valid {:?}", s);
+        eprintln!("test_time_parse_from_str valid {s:?}");
         let d = match s.parse::<NaiveTime>() {
             Ok(d) => d,
-            Err(e) => panic!("parsing `{}` has failed: {}", s, e),
+            Err(e) => panic!("parsing `{s}` has failed: {e}"),
         };
-        let s_ = format!("{:?}", d);
+        let s_ = format!("{d:?}");
         // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
         let d_ = match s_.parse::<NaiveTime>() {
             Ok(d) => d,
             Err(e) => {
-                panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}", s, d, e)
+                panic!("`{s}` is parsed into `{d:?}`, but reparsing that has failed: {e}")
             }
         };
         assert!(
             d == d_,
-            "`{}` is parsed into `{:?}`, but reparsed result \
-                              `{:?}` does not match",
-            s,
-            d,
-            d_
+            "`{s}` is parsed into `{d:?}`, but reparsed result \
+                              `{d_:?}` does not match"
         );
     }
 
@@ -329,7 +326,7 @@ fn test_time_from_str() {
         "09:08:00000000007", // invalid second / invalid fraction format
     ];
     for &s in &invalid {
-        eprintln!("test_time_parse_from_str invalid {:?}", s);
+        eprintln!("test_time_parse_from_str invalid {s:?}");
         assert!(s.parse::<NaiveTime>().is_err());
     }
 }

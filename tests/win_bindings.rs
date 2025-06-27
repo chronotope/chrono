@@ -23,6 +23,6 @@ fn gen_bindings() {
 
     similar_asserts::assert_eq!(existing, new);
     if !new.lines().eq(existing.lines()) {
-        panic!("generated file `{}` is changed.", output);
+        panic!("generated file `{output}` is changed.");
     }
 }
