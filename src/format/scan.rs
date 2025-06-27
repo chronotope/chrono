@@ -205,6 +205,7 @@ pub(crate) fn timezone_offset<F>(
     allow_zulu: bool,
     allow_missing_minutes: bool,
     allow_tz_minus_sign: bool,
+    allow_seconds: bool,
 ) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
@@ -268,13 +269,32 @@ where
     } else {
         return Err(TOO_SHORT);
     };
+
     s = match s.len() {
         len if len >= 2 => &s[2..],
         0 => s,
         _ => return Err(TOO_SHORT),
     };
 
-    let seconds = hours * 3600 + minutes * 60;
+    let mut seconds = hours * 3600 + minutes * 60;
+    match s.chars().next() {
+        Some(':' | '0'..='9') if allow_seconds => {}
+        _ => return Ok((s, if negative { -seconds } else { seconds })),
+    }
+
+    s = consume_colon(s)?;
+    seconds += match digits(s) {
+        Ok((s1 @ b'0'..=b'5', s2 @ b'0'..=b'9')) => i32::from((s1 - b'0') * 10 + (s2 - b'0')),
+        Ok((b'6'..=b'9', b'0'..=b'9')) => return Err(OUT_OF_RANGE),
+        _ => return Err(INVALID),
+    };
+
+    s = match s.len() {
+        len if len >= 2 => &s[2..],
+        0 => s,
+        _ => return Err(TOO_SHORT),
+    };
+
     Ok((s, if negative { -seconds } else { seconds }))
 }
 
@@ -315,7 +335,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, i32)> {
         }
         Err(INVALID)
     } else {
-        timezone_offset(s, |s| Ok(s), false, false, false)
+        timezone_offset(s, |s| Ok(s), false, false, false, false)
     }
 }
 
