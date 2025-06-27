@@ -161,15 +161,15 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         ) -> fmt::Result {
             if always_sign {
                 match pad {
-                    Pad::None => write!(w, "{:+}", v),
+                    Pad::None => write!(w, "{v:+}"),
                     Pad::Zero => write!(w, "{:+01$}", v, n + 1),
                     Pad::Space => write!(w, "{:+1$}", v, n + 1),
                 }
             } else {
                 match pad {
-                    Pad::None => write!(w, "{}", v),
-                    Pad::Zero => write!(w, "{:01$}", v, n),
-                    Pad::Space => write!(w, "{:1$}", v, n),
+                    Pad::None => write!(w, "{v}"),
+                    Pad::Zero => write!(w, "{v:0n$}"),
+                    Pad::Space => write!(w, "{v:n$}"),
                 }
             }
         }
@@ -253,7 +253,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
                     } else if nano % 1_000 == 0 {
                         write!(w, "{:06}", nano / 1_000)
                     } else {
-                        write!(w, "{:09}", nano)
+                        write!(w, "{nano:09}")
                     }
                 }
             }
@@ -278,7 +278,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             (Internal(InternalFixed { val: Nanosecond9NoDot }), _, Some(t), _) => {
                 write!(w, "{:09}", t.nanosecond() % 1_000_000_000)
             }
-            (TimezoneName, _, _, Some((tz_name, _))) => write!(w, "{}", tz_name),
+            (TimezoneName, _, _, Some((tz_name, _))) => write!(w, "{tz_name}"),
             (TimezoneOffset | TimezoneOffsetZ, _, _, Some((_, off))) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Minutes,
@@ -508,7 +508,7 @@ pub(crate) fn write_rfc3339(
         write_hundreds(w, (year % 100) as u8)?;
     } else {
         // ISO 8601 requires the explicit sign for out-of-range years
-        write!(w, "{:+05}", year)?;
+        write!(w, "{year:+05}")?;
     }
     w.write_char('-')?;
     write_hundreds(w, dt.date().month() as u8)?;
@@ -534,7 +534,7 @@ pub(crate) fn write_rfc3339(
         SecondsFormat::Secs => {}
         SecondsFormat::Millis => write!(w, ".{:03}", nano / 1_000_000)?,
         SecondsFormat::Micros => write!(w, ".{:06}", nano / 1000)?,
-        SecondsFormat::Nanos => write!(w, ".{:09}", nano)?,
+        SecondsFormat::Nanos => write!(w, ".{nano:09}")?,
         SecondsFormat::AutoSi => {
             if nano == 0 {
             } else if nano % 1_000_000 == 0 {
@@ -542,7 +542,7 @@ pub(crate) fn write_rfc3339(
             } else if nano % 1_000 == 0 {
                 write!(w, ".{:06}", nano / 1_000)?
             } else {
-                write!(w, ".{:09}", nano)?
+                write!(w, ".{nano:09}")?
             }
         }
         SecondsFormat::__NonExhaustive => unreachable!(),
@@ -763,31 +763,31 @@ mod tests {
 
         // Item::Literal, odd number of padding bytes.
         let percent = datetime.format("%%");
-        assert_eq!("   %", format!("{:>4}", percent));
-        assert_eq!("%   ", format!("{:<4}", percent));
-        assert_eq!(" %  ", format!("{:^4}", percent));
+        assert_eq!("   %", format!("{percent:>4}"));
+        assert_eq!("%   ", format!("{percent:<4}"));
+        assert_eq!(" %  ", format!("{percent:^4}"));
 
         // Item::Numeric, custom non-ASCII padding character
         let year = datetime.format("%Y");
-        assert_eq!("——2007", format!("{:—>6}", year));
-        assert_eq!("2007——", format!("{:—<6}", year));
-        assert_eq!("—2007—", format!("{:—^6}", year));
+        assert_eq!("——2007", format!("{year:—>6}"));
+        assert_eq!("2007——", format!("{year:—<6}"));
+        assert_eq!("—2007—", format!("{year:—^6}"));
 
         // Item::Fixed
         let tz = datetime.format("%Z");
-        assert_eq!("  UTC", format!("{:>5}", tz));
-        assert_eq!("UTC  ", format!("{:<5}", tz));
-        assert_eq!(" UTC ", format!("{:^5}", tz));
+        assert_eq!("  UTC", format!("{tz:>5}"));
+        assert_eq!("UTC  ", format!("{tz:<5}"));
+        assert_eq!(" UTC ", format!("{tz:^5}"));
 
         // [Item::Numeric, Item::Space, Item::Literal, Item::Space, Item::Numeric]
         let ymd = datetime.format("%Y %B %d");
-        assert_eq!("  2007 January 02", format!("{:>17}", ymd));
-        assert_eq!("2007 January 02  ", format!("{:<17}", ymd));
-        assert_eq!(" 2007 January 02 ", format!("{:^17}", ymd));
+        assert_eq!("  2007 January 02", format!("{ymd:>17}"));
+        assert_eq!("2007 January 02  ", format!("{ymd:<17}"));
+        assert_eq!(" 2007 January 02 ", format!("{ymd:^17}"));
 
         // Truncated
         let time = datetime.format("%T%.6f");
-        assert_eq!("12:34:56.1234", format!("{:.13}", time));
+        assert_eq!("12:34:56.1234", format!("{time:.13}"));
     }
 
     #[test]

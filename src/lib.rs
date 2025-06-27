@@ -634,7 +634,7 @@ pub mod serde {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match self {
                 SerdeError::InvalidTimestamp(ts) => {
-                    write!(f, "value is not a legal timestamp: {}", ts)
+                    write!(f, "value is not a legal timestamp: {ts}")
                 }
             }
         }

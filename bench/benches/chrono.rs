@@ -117,7 +117,7 @@ fn bench_get_local_time(c: &mut Criterion) {
 ///
 /// Panics if `div` is not positive.
 fn in_between(start: i32, end: i32, div: i32) -> i32 {
-    assert!(div > 0, "in_between: nonpositive div = {}", div);
+    assert!(div > 0, "in_between: nonpositive div = {div}");
     let start = (start.div_euclid(div), start.rem_euclid(div));
     let end = (end.div_euclid(div), end.rem_euclid(div));
     // The lowest multiple of `div` greater than or equal to `start`, divided.

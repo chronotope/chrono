@@ -2228,7 +2228,7 @@ impl fmt::Debug for NaiveDate {
             write_hundreds(f, (year % 100) as u8)?;
         } else {
             // ISO 8601 requires the explicit sign for out-of-range years
-            write!(f, "{:+05}", year)?;
+            write!(f, "{year:+05}")?;
         }
 
         f.write_char('-')?;

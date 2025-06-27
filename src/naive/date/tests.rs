@@ -26,8 +26,7 @@ fn test_date_bounds() {
     let maxsecs = maxsecs + 86401; // also take care of DateTime
     assert!(
         maxsecs < (1 << MAX_BITS),
-        "The entire `NaiveDate` range somehow exceeds 2^{} seconds",
-        MAX_BITS
+        "The entire `NaiveDate` range somehow exceeds 2^{MAX_BITS} seconds"
     );
 
     const BEFORE_MIN: NaiveDate = NaiveDate::BEFORE_MIN;
@@ -607,29 +606,26 @@ fn test_date_from_str() {
         "+00007-2-18",
     ];
     for &s in &valid {
-        eprintln!("test_date_from_str valid {:?}", s);
+        eprintln!("test_date_from_str valid {s:?}");
         let d = match s.parse::<NaiveDate>() {
             Ok(d) => d,
-            Err(e) => panic!("parsing `{}` has failed: {}", s, e),
+            Err(e) => panic!("parsing `{s}` has failed: {e}"),
         };
-        eprintln!("d {:?} (NaiveDate)", d);
-        let s_ = format!("{:?}", d);
-        eprintln!("s_ {:?}", s_);
+        eprintln!("d {d:?} (NaiveDate)");
+        let s_ = format!("{d:?}");
+        eprintln!("s_ {s_:?}");
         // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
         let d_ = match s_.parse::<NaiveDate>() {
             Ok(d) => d,
             Err(e) => {
-                panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}", s, d, e)
+                panic!("`{s}` is parsed into `{d:?}`, but reparsing that has failed: {e}")
             }
         };
-        eprintln!("d_ {:?} (NaiveDate)", d_);
+        eprintln!("d_ {d_:?} (NaiveDate)");
         assert!(
             d == d_,
-            "`{}` is parsed into `{:?}`, but reparsed result \
-                            `{:?}` does not match",
-            s,
-            d,
-            d_
+            "`{s}` is parsed into `{d:?}`, but reparsed result \
+                            `{d_:?}` does not match"
         );
     }
 
@@ -653,7 +649,7 @@ fn test_date_from_str() {
         "9999999-9-9",          // invalid year (out of bounds)
     ];
     for &s in &invalid {
-        eprintln!("test_date_from_str invalid {:?}", s);
+        eprintln!("test_date_from_str invalid {s:?}");
         assert!(s.parse::<NaiveDate>().is_err());
     }
 }

@@ -340,8 +340,7 @@ mod tests {
             // but there are only two sensible options.
             assert!(
                 timestr == "15:02:60" || timestr == "15:03:00",
-                "unexpected timestr {:?}",
-                timestr
+                "unexpected timestr {timestr:?}"
             );
         }
 
@@ -349,8 +348,7 @@ mod tests {
             let timestr = dt.time().to_string();
             assert!(
                 timestr == "15:02:03.234" || timestr == "15:02:04.234",
-                "unexpected timestr {:?}",
-                timestr
+                "unexpected timestr {timestr:?}"
             );
         }
     }

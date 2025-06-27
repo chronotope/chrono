@@ -86,7 +86,7 @@ impl TimeZone for DstTester {
         {
             MappedLocalTime::None
         } else {
-            panic!("Unexpected local time {}", local)
+            panic!("Unexpected local time {local}")
         }
     }
 
@@ -118,7 +118,7 @@ impl TimeZone for DstTester {
         } else if *utc >= utc_to_winter_transition && *utc < utc_to_summer_transition {
             DstTester::winter_offset()
         } else {
-            panic!("Unexpected utc time {}", utc)
+            panic!("Unexpected utc time {utc}")
         }
     }
 }
@@ -1029,25 +1029,22 @@ fn test_parse_datetime_utc() {
         "+82701-05-6T15:9:60.898989898989Z",
     ];
     for &s in &valid {
-        eprintln!("test_parse_datetime_utc valid {:?}", s);
+        eprintln!("test_parse_datetime_utc valid {s:?}");
         let d = match s.parse::<DateTime<Utc>>() {
             Ok(d) => d,
-            Err(e) => panic!("parsing `{}` has failed: {}", s, e),
+            Err(e) => panic!("parsing `{s}` has failed: {e}"),
         };
-        let s_ = format!("{:?}", d);
+        let s_ = format!("{d:?}");
         // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
         let d_ = match s_.parse::<DateTime<Utc>>() {
             Ok(d) => d,
             Err(e) => {
-                panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}", s, d, e)
+                panic!("`{s}` is parsed into `{d:?}`, but reparsing that has failed: {e}")
             }
         };
         assert!(
             d == d_,
-            "`{}` is parsed into `{:?}`, but reparsed result `{:?}` does not match",
-            s,
-            d,
-            d_
+            "`{s}` is parsed into `{d:?}`, but reparsed result `{d_:?}` does not match"
         );
     }
 
@@ -1081,7 +1078,7 @@ fn test_parse_datetime_utc() {
         "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   Z", // valid datetime, wrong format
     ];
     for &s in &invalid {
-        eprintln!("test_parse_datetime_utc invalid {:?}", s);
+        eprintln!("test_parse_datetime_utc invalid {s:?}");
         assert!(s.parse::<DateTime<Utc>>().is_err());
     }
 }
@@ -1568,7 +1565,7 @@ fn test_min_max_getters() {
     let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
     let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
 
-    assert_eq!(format!("{:?}", beyond_min), "-262144-12-31T22:00:00-02:00");
+    assert_eq!(format!("{beyond_min:?}"), "-262144-12-31T22:00:00-02:00");
     // RFC 2822 doesn't support years with more than 4 digits.
     // assert_eq!(beyond_min.to_rfc2822(), "");
     #[cfg(feature = "alloc")]
@@ -1593,7 +1590,7 @@ fn test_min_max_getters() {
     assert_eq!(beyond_min.second(), 0);
     assert_eq!(beyond_min.nanosecond(), 0);
 
-    assert_eq!(format!("{:?}", beyond_max), "+262143-01-01T01:59:59.999999999+02:00");
+    assert_eq!(format!("{beyond_max:?}"), "+262143-01-01T01:59:59.999999999+02:00");
     // RFC 2822 doesn't support years with more than 4 digits.
     // assert_eq!(beyond_max.to_rfc2822(), "");
     #[cfg(feature = "alloc")]
@@ -1894,7 +1891,7 @@ fn nano_roundrip() {
         i64::MAX - 1,
         i64::MAX,
     ] {
-        println!("nanos: {}", nanos);
+        println!("nanos: {nanos}");
         let dt = Utc.timestamp_nanos(nanos);
         let nanos2 = dt.timestamp_nanos_opt().expect("value roundtrips");
         assert_eq!(nanos, nanos2);

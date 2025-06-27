@@ -281,7 +281,7 @@ impl<T: fmt::Debug> MappedLocalTime<T> {
             MappedLocalTime::None => panic!("No such local time"),
             MappedLocalTime::Single(t) => t,
             MappedLocalTime::Ambiguous(t1, t2) => {
-                panic!("Ambiguous local time, ranging from {:?} to {:?}", t1, t2)
+                panic!("Ambiguous local time, ranging from {t1:?} to {t2:?}")
             }
         }
     }
@@ -673,7 +673,7 @@ mod tests {
                 MappedLocalTime::Single(dt) => {
                     assert_eq!(dt.to_string(), *expected);
                 }
-                e => panic!("Got {:?} instead of an okay answer", e),
+                e => panic!("Got {e:?} instead of an okay answer"),
             }
         }
     }

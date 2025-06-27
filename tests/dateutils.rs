@@ -37,11 +37,11 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
 
     let date = NaiveDate::from_ymd_opt(dt.year(), dt.month(), dt.day()).unwrap();
     match Local.from_local_datetime(&date.and_hms_opt(dt.hour(), 5, 1).unwrap()) {
-        chrono::MappedLocalTime::Ambiguous(a, b) => assert!(
-            format!("{}\n", a) == date_command_str || format!("{}\n", b) == date_command_str
-        ),
+        chrono::MappedLocalTime::Ambiguous(a, b) => {
+            assert!(format!("{a}\n") == date_command_str || format!("{b}\n") == date_command_str)
+        }
         chrono::MappedLocalTime::Single(a) => {
-            assert_eq!(format!("{}\n", a), date_command_str);
+            assert_eq!(format!("{a}\n"), date_command_str);
         }
         chrono::MappedLocalTime::None => {
             assert_eq!("", date_command_str);
@@ -66,29 +66,26 @@ const DATE_PATH: &str = "/opt/freeware/bin/date";
 fn assert_run_date_version() {
     // note environment variable `LANG`
     match std::env::var_os("LANG") {
-        Some(lang) => eprintln!("LANG: {:?}", lang),
+        Some(lang) => eprintln!("LANG: {lang:?}"),
         None => eprintln!("LANG not set"),
     }
     let out = process::Command::new(DATE_PATH).arg("--version").output().unwrap();
     let stdout = String::from_utf8(out.stdout).unwrap();
     let stderr = String::from_utf8(out.stderr).unwrap();
     // note the `date` binary version
-    eprintln!("command: {:?} --version\nstdout: {:?}\nstderr: {:?}", DATE_PATH, stdout, stderr);
-    assert!(out.status.success(), "command failed: {:?} --version", DATE_PATH);
+    eprintln!("command: {DATE_PATH:?} --version\nstdout: {stdout:?}\nstderr: {stderr:?}");
+    assert!(out.status.success(), "command failed: {DATE_PATH:?} --version");
 }
 
 #[test]
 fn try_verify_against_date_command() {
     if !path::Path::new(DATE_PATH).exists() {
-        eprintln!("date command {:?} not found, skipping", DATE_PATH);
+        eprintln!("date command {DATE_PATH:?} not found, skipping");
         return;
     }
     assert_run_date_version();
 
-    eprintln!(
-        "Run command {:?} for every hour from 1975 to 2077, skipping some years...",
-        DATE_PATH,
-    );
+    eprintln!("Run command {DATE_PATH:?} for every hour from 1975 to 2077, skipping some years...",);
 
     let mut children = vec![];
     for year in [1975, 1976, 1977, 2020, 2021, 2022, 2073, 2074, 2075, 2076, 2077].iter() {
@@ -135,7 +132,7 @@ fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTim
             dt.minute(),
             dt.second()
         ))
-        .arg(format!("+{}", required_format))
+        .arg(format!("+{required_format}"))
         .output()
         .unwrap();
 
@@ -152,7 +149,7 @@ fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTim
 #[cfg(target_os = "linux")]
 fn try_verify_against_date_command_format() {
     if !path::Path::new(DATE_PATH).exists() {
-        eprintln!("date command {:?} not found, skipping", DATE_PATH);
+        eprintln!("date command {DATE_PATH:?} not found, skipping");
         return;
     }
     assert_run_date_version();
