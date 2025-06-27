@@ -2128,6 +2128,7 @@ impl From<NaiveDateTime> for NaiveDate {
 
 /// Iterator over `NaiveDate` with a step size of one day.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct NaiveDateDaysIterator {
     value: NaiveDate,
 }
@@ -2164,6 +2165,7 @@ impl FusedIterator for NaiveDateDaysIterator {}
 
 /// Iterator over `NaiveDate` with a step size of one week.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct NaiveDateWeeksIterator {
     value: NaiveDate,
 }
@@ -2235,6 +2237,23 @@ impl fmt::Debug for NaiveDate {
         write_hundreds(f, mdf.month() as u8)?;
         f.write_char('-')?;
         write_hundreds(f, mdf.day() as u8)
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for NaiveDate {
+    fn format(&self, fmt: defmt::Formatter) {
+        let year = self.year();
+        let mdf = self.mdf();
+        if (0..=9999).contains(&year) {
+            defmt::write!(fmt, "{:02}{:02}", year / 100, year % 100);
+        } else {
+            // ISO 8601 requires the explicit sign for out-of-range years
+            let sign = ['+', '-'][(year < 0) as usize];
+            defmt::write!(fmt, "{}{:05}", sign, year.abs());
+        }
+
+        defmt::write!(fmt, "-{:02}-{:02}", mdf.month(), mdf.day());
     }
 }
 
