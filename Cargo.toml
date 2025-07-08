@@ -50,6 +50,7 @@ js-sys = { version = "0.3", optional = true }       # contains FFI bindings for 
 
 [target.'cfg(windows)'.dependencies]
 windows-link = { version = "0.1", optional = true }
+zerocopy = { version = "0.8.26", features = ["derive"] }
 
 [target.'cfg(windows)'.dev-dependencies]
 windows-bindgen = { version = "0.62" } # MSRV is 1.74

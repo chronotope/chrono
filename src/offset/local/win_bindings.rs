@@ -4,9 +4,10 @@ windows_link::link!("kernel32.dll" "system" fn GetTimeZoneInformationForYear(wye
 windows_link::link!("kernel32.dll" "system" fn SystemTimeToFileTime(lpsystemtime : *const SYSTEMTIME, lpfiletime : *mut FILETIME) -> BOOL);
 windows_link::link!("kernel32.dll" "system" fn SystemTimeToTzSpecificLocalTime(lptimezoneinformation : *const TIME_ZONE_INFORMATION, lpuniversaltime : *const SYSTEMTIME, lplocaltime : *mut SYSTEMTIME) -> BOOL);
 windows_link::link!("kernel32.dll" "system" fn TzSpecificLocalTimeToSystemTime(lptimezoneinformation : *const TIME_ZONE_INFORMATION, lplocaltime : *const SYSTEMTIME, lpuniversaltime : *mut SYSTEMTIME) -> BOOL);
+use zerocopy::FromZeros;
 pub type BOOL = i32;
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, FromZeros)]
 pub struct DYNAMIC_TIME_ZONE_INFORMATION {
     pub Bias: i32,
     pub StandardName: [u16; 32],
@@ -20,7 +21,7 @@ pub struct DYNAMIC_TIME_ZONE_INFORMATION {
 }
 impl Default for DYNAMIC_TIME_ZONE_INFORMATION {
     fn default() -> Self {
-        unsafe { core::mem::zeroed() }
+        Self::new_zeroed()
     }
 }
 #[repr(C)]
@@ -30,7 +31,7 @@ pub struct FILETIME {
     pub dwHighDateTime: u32,
 }
 #[repr(C)]
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, FromZeros)]
 pub struct SYSTEMTIME {
     pub wYear: u16,
     pub wMonth: u16,
@@ -42,7 +43,7 @@ pub struct SYSTEMTIME {
     pub wMilliseconds: u16,
 }
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, FromZeros)]
 pub struct TIME_ZONE_INFORMATION {
     pub Bias: i32,
     pub StandardName: [u16; 32],
@@ -54,6 +55,6 @@ pub struct TIME_ZONE_INFORMATION {
 }
 impl Default for TIME_ZONE_INFORMATION {
     fn default() -> Self {
-        unsafe { core::mem::zeroed() }
+        Self::new_zeroed()
     }
 }
