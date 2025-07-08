@@ -74,15 +74,15 @@ struct Cache {
 #[cfg(target_os = "aix")]
 const TZDB_LOCATION: &str = "/usr/share/lib/zoneinfo";
 
-#[cfg(not(any(target_os = "android", target_os = "aix")))]
+#[cfg(not(any(target_os = "android", target_os = "aix", target_env = "ohos")))]
 const TZDB_LOCATION: &str = "/usr/share/zoneinfo";
 
 fn fallback_timezone() -> Option<TimeZone> {
     let tz_name = iana_time_zone::get_timezone().ok()?;
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(any(target_os = "android", target_env = "ohos")))]
     let bytes = fs::read(format!("{TZDB_LOCATION}/{tz_name}")).ok()?;
-    #[cfg(target_os = "android")]
-    let bytes = android_tzdata::find_tz_data(&tz_name).ok()?;
+    #[cfg(any(target_os = "android", target_env = "ohos"))]
+    let bytes = crate::offset::local::tz_data::for_zone(&tz_name).ok()??;
     TimeZone::from_tz_data(&bytes).ok()
 }
 
