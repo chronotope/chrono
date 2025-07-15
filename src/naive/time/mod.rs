@@ -896,6 +896,7 @@ impl NaiveTime {
 
     /// The earliest possible `NaiveTime`
     pub const MIN: Self = Self { secs: 0, frac: 0 };
+    /// The latest possible `NaiveTime`
     pub const MAX: Self = Self { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
 }
 
