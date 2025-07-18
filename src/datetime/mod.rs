@@ -1938,4 +1938,4 @@ where
 /// except for 1700, 1800 and 1900                                       -3 +
 ///                                                                  --------
 ///                                                                  719163
-const UNIX_EPOCH_DAY: i64 = 719_163;
+pub(crate) const UNIX_EPOCH_DAY: i64 = 719_163;

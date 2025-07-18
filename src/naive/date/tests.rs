@@ -302,6 +302,39 @@ fn test_date_from_num_days_from_ce() {
 }
 
 #[test]
+fn test_date_from_epoch_days() {
+    let from_epoch_days = NaiveDate::from_epoch_days;
+    assert_eq!(from_epoch_days(-719_162), Some(NaiveDate::from_ymd_opt(1, 1, 1).unwrap()));
+    assert_eq!(from_epoch_days(0), Some(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()));
+    assert_eq!(from_epoch_days(1), Some(NaiveDate::from_ymd_opt(1970, 1, 2).unwrap()));
+    assert_eq!(from_epoch_days(2), Some(NaiveDate::from_ymd_opt(1970, 1, 3).unwrap()));
+    assert_eq!(from_epoch_days(30), Some(NaiveDate::from_ymd_opt(1970, 1, 31).unwrap()));
+    assert_eq!(from_epoch_days(31), Some(NaiveDate::from_ymd_opt(1970, 2, 1).unwrap()));
+    assert_eq!(from_epoch_days(58), Some(NaiveDate::from_ymd_opt(1970, 2, 28).unwrap()));
+    assert_eq!(from_epoch_days(59), Some(NaiveDate::from_ymd_opt(1970, 3, 1).unwrap()));
+    assert_eq!(from_epoch_days(364), Some(NaiveDate::from_ymd_opt(1970, 12, 31).unwrap()));
+    assert_eq!(from_epoch_days(365), Some(NaiveDate::from_ymd_opt(1971, 1, 1).unwrap()));
+    assert_eq!(from_epoch_days(365 * 2), Some(NaiveDate::from_ymd_opt(1972, 1, 1).unwrap()));
+    assert_eq!(from_epoch_days(365 * 3 + 1), Some(NaiveDate::from_ymd_opt(1973, 1, 1).unwrap()));
+    assert_eq!(from_epoch_days(365 * 4 + 1), Some(NaiveDate::from_ymd_opt(1974, 1, 1).unwrap()));
+    assert_eq!(from_epoch_days(13036), Some(NaiveDate::from_ymd_opt(2005, 9, 10).unwrap()));
+    assert_eq!(from_epoch_days(-365), Some(NaiveDate::from_ymd_opt(1969, 1, 1).unwrap()));
+    assert_eq!(from_epoch_days(-366), Some(NaiveDate::from_ymd_opt(1968, 12, 31).unwrap()));
+
+    for days in (-9999..10001).map(|x| x * 100) {
+        assert_eq!(from_epoch_days(days).map(|d| d.to_epoch_days()), Some(days));
+    }
+
+    assert_eq!(from_epoch_days(NaiveDate::MIN.to_epoch_days()), Some(NaiveDate::MIN));
+    assert_eq!(from_epoch_days(NaiveDate::MIN.to_epoch_days() - 1), None);
+    assert_eq!(from_epoch_days(NaiveDate::MAX.to_epoch_days()), Some(NaiveDate::MAX));
+    assert_eq!(from_epoch_days(NaiveDate::MAX.to_epoch_days() + 1), None);
+
+    assert_eq!(from_epoch_days(i32::MIN), None);
+    assert_eq!(from_epoch_days(i32::MAX), None);
+}
+
+#[test]
 fn test_date_from_weekday_of_month_opt() {
     let ymwd = NaiveDate::from_weekday_of_month_opt;
     assert_eq!(ymwd(2018, 8, Weekday::Tue, 0), None);
@@ -419,6 +452,18 @@ fn test_date_num_days_from_ce() {
         assert_eq!(
             NaiveDate::from_ymd_opt(year, 1, 1).unwrap().num_days_from_ce(),
             NaiveDate::from_ymd_opt(year - 1, 12, 31).unwrap().num_days_from_ce() + 1
+        );
+    }
+}
+
+#[test]
+fn test_date_to_epoch_days() {
+    assert_eq!(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().to_epoch_days(), 0);
+
+    for year in -9999..10001 {
+        assert_eq!(
+            NaiveDate::from_ymd_opt(year, 1, 1).unwrap().to_epoch_days(),
+            NaiveDate::from_ymd_opt(year - 1, 12, 31).unwrap().to_epoch_days() + 1
         );
     }
 }
