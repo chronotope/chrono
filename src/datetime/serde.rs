@@ -1206,6 +1206,92 @@ pub mod ts_seconds_option {
     }
 }
 
+/// Ser/de to/from RFC 2822 strings
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// use chrono::{DateTime, NaiveDate, FixedOffset, TimeZone};
+/// use serde_derive::{Deserialize, Serialize};
+///
+/// #[derive(Deserialize, Serialize)]
+/// struct Example {
+///     #[serde(with = "chrono::serde::rfc2822")]
+///     time: DateTime<FixedOffset>
+/// }
+/// let offset = 3600;
+/// let actual_time = NaiveDate::from_ymd_opt(2018, 5, 17).unwrap()
+///     .and_hms_opt(02, 04, 59).unwrap()
+///     .and_local_timezone(TimeZone::from_offset(&FixedOffset::east_opt(offset).unwrap())).unwrap();
+/// let to_serialize = Example {
+///     time: actual_time.clone(),
+/// };
+///
+/// let serialized = serde_json::to_string(&to_serialize).unwrap();
+/// assert_eq!(serialized, r#"{"time":"Thu, 17 May 2018 02:04:59 +0100"}"#);
+///
+/// let deserialized: Example = serde_json::from_str(&serialized).unwrap();
+/// assert_eq!(deserialized.time, actual_time);
+/// ```
+pub mod rfc2822 {
+    use crate::format::write_rfc2822;
+    use crate::{DateTime, FixedOffset, Offset, TimeZone};
+    use core::fmt;
+    use serde::{de, ser};
+
+    /// Serialize a datetime into an RFC 2822 formatted string, e.g. "01 Jun 2016 14:31:46 -0700"
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    pub fn serialize<S>(dt: &DateTime<FixedOffset>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        struct FormatRfc2822<'a, Tz: TimeZone> {
+            inner: &'a DateTime<Tz>,
+        }
+
+        impl<'a, Tz: TimeZone> fmt::Display for FormatRfc2822<'a, Tz> {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                let naive = self.inner.naive_local();
+                let offset = self.inner.offset.fix();
+                write_rfc2822(f, naive, offset)
+            }
+        }
+
+        serializer.collect_str(&FormatRfc2822 { inner: dt })
+    }
+
+    #[derive(Debug)]
+    struct Rfc2822Visitor;
+
+    /// Deserialize a [`DateTime`] from an RFC 2822 datetime
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<FixedOffset>, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(Rfc2822Visitor)
+    }
+
+    impl<'de> de::Visitor<'de> for Rfc2822Visitor {
+        type Value = DateTime<FixedOffset>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("an RFC 2822 formatted datetime string")
+        }
+
+        fn visit_str<E>(self, date_string: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            DateTime::parse_from_rfc2822(date_string).map_err(E::custom)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(feature = "clock")]
