@@ -18,7 +18,7 @@ use std::error::Error;
 
 use crate::{expect, try_opt};
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// The number of nanoseconds in a microsecond.
@@ -50,13 +50,7 @@ const SECS_PER_WEEK: i64 = 604_800;
 /// range of `i64::MIN`. This is to allow easy flipping of sign, so that for
 /// instance `abs()` can be called without any checks.
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct TimeDelta {
     secs: i64,
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
@@ -1430,7 +1424,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "rkyv-validation")]
+    #[cfg(feature = "rkyv-bytecheck")]
     fn test_rkyv_validation() {
         let duration = TimeDelta::try_seconds(1).unwrap();
         let bytes = rkyv::to_bytes::<_, 16>(&duration).unwrap();

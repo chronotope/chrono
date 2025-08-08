@@ -894,7 +894,7 @@ const YEAR_FLAGS: [(i32, YearFlags, Weekday); 14] = [
 ];
 
 #[test]
-#[cfg(feature = "rkyv-validation")]
+#[cfg(feature = "rkyv-bytecheck")]
 fn test_rkyv_validation() {
     let date_min = NaiveDate::MIN;
     let bytes = rkyv::to_bytes::<_, 4>(&date_min).unwrap();

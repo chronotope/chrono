@@ -6,7 +6,7 @@
 use core::fmt;
 use core::str::FromStr;
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{MappedLocalTime, Offset, TimeZone};
@@ -20,13 +20,7 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 /// `DateTime<FixedOffset>` instances. See the [`east_opt`](#method.east_opt) and
 /// [`west_opt`](#method.west_opt) methods for examples.
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
@@ -227,7 +221,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "rkyv-validation")]
+    #[cfg(feature = "rkyv-bytecheck")]
     fn test_rkyv_validation() {
         let offset = FixedOffset::from_str("-0500").unwrap();
         let bytes = rkyv::to_bytes::<_, 4>(&offset).unwrap();

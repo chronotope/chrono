@@ -1,6 +1,6 @@
 use core::fmt;
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::OutOfRange;
@@ -30,13 +30,7 @@ use crate::naive::NaiveDate;
 /// Can be Serialized/Deserialized with serde
 // Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, PartialOrd, Ord)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(arbitrary::Arbitrary))]
 pub enum Month {
     /// January
@@ -456,7 +450,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "rkyv-validation")]
+    #[cfg(feature = "rkyv-bytecheck")]
     fn test_rkyv_validation() {
         let month = Month::January;
         let bytes = rkyv::to_bytes::<_, 1>(&month).unwrap();

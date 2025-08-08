@@ -31,7 +31,7 @@ use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
 use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
 use crate::{expect, try_opt};
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// documented at re-export site
@@ -47,12 +47,7 @@ mod tests;
 /// the general-purpose constructors are all via the methods on the
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
 #[derive(Clone)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
@@ -1771,7 +1766,7 @@ impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
 // * https://github.com/rust-lang/rust/issues/26925
 // * https://github.com/rkyv/rkyv/issues/333
 // * https://github.com/dtolnay/syn/issues/370
-#[cfg(feature = "rkyv-validation")]
+#[cfg(feature = "rkyv-bytecheck")]
 impl<Tz: TimeZone> fmt::Debug for ArchivedDateTime<Tz>
 where
     Tz: Archive,

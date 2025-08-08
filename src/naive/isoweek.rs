@@ -7,7 +7,7 @@ use core::fmt;
 
 use super::internals::YearFlags;
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// ISO 8601 week.
@@ -17,13 +17,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// One can retrieve this type from the existing [`Datelike`](../trait.Datelike.html) types
 /// via the [`Datelike::iso_week`](../trait.Datelike.html#tymethod.iso_week) method.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct IsoWeek {
     // Note that this allows for larger year range than `NaiveDate`.
     // This is crucial because we have an edge case for the first and last week supported,
@@ -162,7 +156,7 @@ impl fmt::Debug for IsoWeek {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "rkyv-validation")]
+    #[cfg(feature = "rkyv-bytecheck")]
     use super::IsoWeek;
     use crate::Datelike;
     use crate::naive::date::{self, NaiveDate};
@@ -220,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "rkyv-validation")]
+    #[cfg(feature = "rkyv-bytecheck")]
     fn test_rkyv_validation() {
         let minweek = NaiveDate::MIN.iso_week();
         let bytes = rkyv::to_bytes::<_, 4>(&minweek).unwrap();

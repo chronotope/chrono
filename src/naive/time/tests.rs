@@ -378,7 +378,7 @@ fn test_overflowing_offset() {
 }
 
 #[test]
-#[cfg(feature = "rkyv-validation")]
+#[cfg(feature = "rkyv-bytecheck")]
 fn test_rkyv_validation() {
     let t_min = NaiveTime::MIN;
     let bytes = rkyv::to_bytes::<_, 8>(&t_min).unwrap();

@@ -393,7 +393,7 @@ fn test_and_timezone_min_max_dates() {
 }
 
 #[test]
-#[cfg(feature = "rkyv-validation")]
+#[cfg(feature = "rkyv-bytecheck")]
 fn test_rkyv_validation() {
     let dt_min = NaiveDateTime::MIN;
     let bytes = rkyv::to_bytes::<_, 12>(&dt_min).unwrap();
