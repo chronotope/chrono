@@ -134,7 +134,7 @@ impl TimeZone {
     }
 
     /// Returns a reference to the time zone
-    fn as_ref(&self) -> TimeZoneRef {
+    fn as_ref(&self) -> TimeZoneRef<'_> {
         TimeZoneRef {
             transitions: &self.transitions,
             local_time_types: &self.local_time_types,
