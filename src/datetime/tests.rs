@@ -154,7 +154,10 @@ fn test_datetime_from_timestamp_millis() {
     // that of `from_timestamp_opt`.
     let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
     for secs in secs_test.iter().cloned() {
-        assert_eq!(DateTime::from_timestamp_millis(secs * 1000), DateTime::from_timestamp(secs, 0));
+        assert_eq!(
+            DateTime::from_timestamp_millis(secs * 1000),
+            DateTime::from_timestamp_secs(secs)
+        );
     }
 }
 
@@ -191,7 +194,7 @@ fn test_datetime_from_timestamp_micros() {
     for secs in secs_test.iter().copied() {
         assert_eq!(
             DateTime::from_timestamp_micros(secs * 1_000_000),
-            DateTime::from_timestamp(secs, 0)
+            DateTime::from_timestamp_secs(secs)
         );
     }
 }
@@ -242,24 +245,34 @@ fn test_datetime_from_timestamp_nanos() {
     for secs in secs_test.iter().copied() {
         assert_eq!(
             Some(DateTime::from_timestamp_nanos(secs * 1_000_000_000)),
-            DateTime::from_timestamp(secs, 0)
+            DateTime::from_timestamp_secs(secs)
         );
     }
 }
 
 #[test]
+fn test_datetime_from_timestamp_secs() {
+    let valid = [-2208936075, 0, 119731017, 1234567890, 2034061609];
+
+    for timestamp_secs in valid.iter().copied() {
+        let datetime = DateTime::from_timestamp_secs(timestamp_secs).unwrap();
+        assert_eq!(timestamp_secs, datetime.timestamp());
+        assert_eq!(DateTime::from_timestamp(timestamp_secs, 0).unwrap(), datetime);
+    }
+}
+
+#[test]
 fn test_datetime_from_timestamp() {
-    let from_timestamp = |secs| DateTime::from_timestamp(secs, 0);
     let ymdhms = |y, m, d, h, n, s| {
         NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap().and_utc()
     };
-    assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
-    assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
-    assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
-    assert_eq!(from_timestamp(1_000_000_000), Some(ymdhms(2001, 9, 9, 1, 46, 40)));
-    assert_eq!(from_timestamp(0x7fffffff), Some(ymdhms(2038, 1, 19, 3, 14, 7)));
-    assert_eq!(from_timestamp(i64::MIN), None);
-    assert_eq!(from_timestamp(i64::MAX), None);
+    assert_eq!(DateTime::from_timestamp_secs(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
+    assert_eq!(DateTime::from_timestamp_secs(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
+    assert_eq!(DateTime::from_timestamp_secs(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
+    assert_eq!(DateTime::from_timestamp_secs(1_000_000_000), Some(ymdhms(2001, 9, 9, 1, 46, 40)));
+    assert_eq!(DateTime::from_timestamp_secs(0x7fffffff), Some(ymdhms(2038, 1, 19, 3, 14, 7)));
+    assert_eq!(DateTime::from_timestamp_secs(i64::MIN), None);
+    assert_eq!(DateTime::from_timestamp_secs(i64::MAX), None);
 }
 
 #[test]

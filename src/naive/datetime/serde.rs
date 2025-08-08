@@ -955,7 +955,7 @@ pub mod ts_seconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// let expected = DateTime::from_timestamp(1431684000, 0).unwrap().naive_utc();
+    /// let expected = DateTime::from_timestamp_secs(1431684000).unwrap().naive_utc();
     /// assert_eq!(my_s, S { time: expected });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
@@ -979,7 +979,7 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            DateTime::from_timestamp(value, 0)
+            DateTime::from_timestamp_secs(value)
                 .map(|dt| dt.naive_utc())
                 .ok_or_else(|| invalid_ts(value))
         }
@@ -991,7 +991,7 @@ pub mod ts_seconds {
             if value > i64::MAX as u64 {
                 Err(invalid_ts(value))
             } else {
-                DateTime::from_timestamp(value as i64, 0)
+                DateTime::from_timestamp_secs(value as i64)
                     .map(|dt| dt.naive_utc())
                     .ok_or_else(|| invalid_ts(value))
             }
@@ -1080,7 +1080,7 @@ pub mod ts_seconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// let expected = DateTime::from_timestamp(1431684000, 0).unwrap().naive_utc();
+    /// let expected = DateTime::from_timestamp_secs(1431684000).unwrap().naive_utc();
     /// assert_eq!(my_s, S { time: Some(expected) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
