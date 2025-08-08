@@ -248,6 +248,39 @@ fn test_datetime_from_timestamp_nanos() {
 }
 
 #[test]
+fn test_datetime_from_timestamp_secs() {
+    let valid_map = [
+        (1662921288, "2022-09-11 18:34:48.000000000"),
+        (-2208936075, "1900-01-01 14:38:45.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017, "1973-10-17 18:36:57.000000000"),
+        (1234567890, "2009-02-13 23:31:30.000000000"),
+        (2034061609, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_secs, _formatted) in valid_map.iter().copied() {
+        let datetime = DateTime::from_timestamp_secs(timestamp_secs).unwrap();
+        assert_eq!(timestamp_secs, datetime.timestamp());
+        #[cfg(feature = "alloc")]
+        assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
+    }
+
+    let invalid = [i64::MAX, i64::MIN];
+
+    for timestamp_secs in invalid.iter().copied() {
+        let datetime = DateTime::from_timestamp_secs(timestamp_secs);
+        assert!(datetime.is_none());
+    }
+
+    // Test that the result of `from_timestamp_secs` compares equal to
+    // that of `from_timestamp`.
+    let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
+    for secs in secs_test.iter().cloned() {
+        assert_eq!(DateTime::from_timestamp_secs(secs), DateTime::from_timestamp(secs, 0));
+    }
+}
+
+#[test]
 fn test_datetime_from_timestamp() {
     let from_timestamp = |secs| DateTime::from_timestamp(secs, 0);
     let ymdhms = |y, m, d, h, n, s| {
