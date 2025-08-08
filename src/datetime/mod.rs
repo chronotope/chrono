@@ -1766,13 +1766,13 @@ impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
 // * https://github.com/rust-lang/rust/issues/26925
 // * https://github.com/rkyv/rkyv/issues/333
 // * https://github.com/dtolnay/syn/issues/370
-#[cfg(feature = "rkyv-bytecheck")]
+#[cfg(feature = "rkyv")]
 impl<Tz: TimeZone> fmt::Debug for ArchivedDateTime<Tz>
 where
-    Tz: Archive,
-    <Tz as Archive>::Archived: fmt::Debug,
-    <<Tz as TimeZone>::Offset as Archive>::Archived: fmt::Debug,
-    <Tz as TimeZone>::Offset: fmt::Debug + Archive,
+    Tz: rkyv::Archive,
+    <Tz as rkyv::Archive>::Archived: fmt::Debug,
+    <<Tz as TimeZone>::Offset as rkyv::Archive>::Archived: fmt::Debug,
+    <Tz as TimeZone>::Offset: fmt::Debug + rkyv::Archive,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ArchivedDateTime")

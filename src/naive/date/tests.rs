@@ -897,12 +897,12 @@ const YEAR_FLAGS: [(i32, YearFlags, Weekday); 14] = [
 #[cfg(feature = "rkyv-bytecheck")]
 fn test_rkyv_validation() {
     let date_min = NaiveDate::MIN;
-    let bytes = rkyv::to_bytes::<_, 4>(&date_min).unwrap();
-    assert_eq!(rkyv::from_bytes::<NaiveDate>(&bytes).unwrap(), date_min);
+    let bytes = ::rkyv::to_bytes::<::rancor::Error>(&date_min).unwrap();
+    assert_eq!(::rkyv::from_bytes::<NaiveDate, ::rancor::Error>(&bytes).unwrap(), date_min);
 
     let date_max = NaiveDate::MAX;
-    let bytes = rkyv::to_bytes::<_, 4>(&date_max).unwrap();
-    assert_eq!(rkyv::from_bytes::<NaiveDate>(&bytes).unwrap(), date_max);
+    let bytes = ::rkyv::to_bytes::<::rancor::Error>(&date_max).unwrap();
+    assert_eq!(::rkyv::from_bytes::<NaiveDate, ::rancor::Error>(&bytes).unwrap(), date_max);
 }
 
 //   MAX_YEAR-12-31 minus 0000-01-01

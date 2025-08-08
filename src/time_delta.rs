@@ -1427,7 +1427,7 @@ mod tests {
     #[cfg(feature = "rkyv-bytecheck")]
     fn test_rkyv_validation() {
         let duration = TimeDelta::try_seconds(1).unwrap();
-        let bytes = rkyv::to_bytes::<_, 16>(&duration).unwrap();
-        assert_eq!(rkyv::from_bytes::<TimeDelta>(&bytes).unwrap(), duration);
+        let bytes = ::rkyv::to_bytes::<::rancor::Error>(&duration).unwrap();
+        assert_eq!(::rkyv::from_bytes::<TimeDelta, ::rancor::Error>(&bytes).unwrap(), duration);
     }
 }

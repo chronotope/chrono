@@ -92,7 +92,7 @@ mod tests;
 ///
 /// [proleptic Gregorian date]: crate::NaiveDate#calendar-date
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize), rkyv(derive(Debug)))]
 pub struct NaiveDate {
     yof: NonZeroI32, // (year << 13) | of
 }

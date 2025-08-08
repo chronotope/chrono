@@ -381,10 +381,10 @@ fn test_overflowing_offset() {
 #[cfg(feature = "rkyv-bytecheck")]
 fn test_rkyv_validation() {
     let t_min = NaiveTime::MIN;
-    let bytes = rkyv::to_bytes::<_, 8>(&t_min).unwrap();
-    assert_eq!(rkyv::from_bytes::<NaiveTime>(&bytes).unwrap(), t_min);
+    let bytes = ::rkyv::to_bytes::<::rancor::Error>(&t_min).unwrap();
+    assert_eq!(::rkyv::from_bytes::<NaiveTime, ::rancor::Error>(&bytes).unwrap(), t_min);
 
     let t_max = NaiveTime::MAX;
-    let bytes = rkyv::to_bytes::<_, 8>(&t_max).unwrap();
-    assert_eq!(rkyv::from_bytes::<NaiveTime>(&bytes).unwrap(), t_max);
+    let bytes = ::rkyv::to_bytes::<::rancor::Error>(&t_max).unwrap();
+    assert_eq!(::rkyv::from_bytes::<NaiveTime, ::rancor::Error>(&bytes).unwrap(), t_max);
 }

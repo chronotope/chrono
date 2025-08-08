@@ -20,7 +20,7 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 /// `DateTime<FixedOffset>` instances. See the [`east_opt`](#method.east_opt) and
 /// [`west_opt`](#method.west_opt) methods for examples.
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize), rkyv(derive(Debug)))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
@@ -224,7 +224,7 @@ mod tests {
     #[cfg(feature = "rkyv-bytecheck")]
     fn test_rkyv_validation() {
         let offset = FixedOffset::from_str("-0500").unwrap();
-        let bytes = rkyv::to_bytes::<_, 4>(&offset).unwrap();
-        assert_eq!(rkyv::from_bytes::<FixedOffset>(&bytes).unwrap(), offset);
+        let bytes = ::rkyv::to_bytes::<::rancor::Error>(&offset).unwrap();
+        assert_eq!(::rkyv::from_bytes::<FixedOffset, ::rancor::Error>(&bytes).unwrap(), offset);
     }
 }

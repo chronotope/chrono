@@ -217,11 +217,11 @@ mod tests {
     #[cfg(feature = "rkyv-bytecheck")]
     fn test_rkyv_validation() {
         let minweek = NaiveDate::MIN.iso_week();
-        let bytes = rkyv::to_bytes::<_, 4>(&minweek).unwrap();
-        assert_eq!(rkyv::from_bytes::<IsoWeek>(&bytes).unwrap(), minweek);
+        let bytes = ::rkyv::to_bytes::<::rancor::Error>(&minweek).unwrap();
+        assert_eq!(::rkyv::from_bytes::<IsoWeek, ::rancor::Error>(&bytes).unwrap(), minweek);
 
         let maxweek = NaiveDate::MAX.iso_week();
-        let bytes = rkyv::to_bytes::<_, 4>(&maxweek).unwrap();
-        assert_eq!(rkyv::from_bytes::<IsoWeek>(&bytes).unwrap(), maxweek);
+        let bytes = ::rkyv::to_bytes::<::rancor::Error>(&maxweek).unwrap();
+        assert_eq!(::rkyv::from_bytes::<IsoWeek, ::rancor::Error>(&bytes).unwrap(), maxweek);
     }
 }

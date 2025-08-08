@@ -210,7 +210,7 @@ mod tests;
 /// Since Chrono alone cannot determine any existence of leap seconds,
 /// **there is absolutely no guarantee that the leap second read has actually happened**.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize), rkyv(derive(Debug)))]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,

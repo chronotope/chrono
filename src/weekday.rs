@@ -395,8 +395,8 @@ mod tests {
     #[cfg(feature = "rkyv-bytecheck")]
     fn test_rkyv_validation() {
         let mon = Weekday::Mon;
-        let bytes = rkyv::to_bytes::<_, 1>(&mon).unwrap();
+        let bytes = ::rkyv::to_bytes::<::rancor::Error>(&mon).unwrap();
 
-        assert_eq!(rkyv::from_bytes::<Weekday>(&bytes).unwrap(), mon);
+        assert_eq!(::rkyv::from_bytes::<Weekday, ::rancor::Error>(&bytes).unwrap(), mon);
     }
 }
