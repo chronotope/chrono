@@ -2,7 +2,7 @@ name: All Tests and Builds
 
 env:
   # It's really `--all-features`, but not adding the mutually exclusive features from rkyv
-  ALL_NON_EXCLUSIVE_FEATURES: --features "default unstable-locales rkyv-32 rkyv-validation serde arbitrary"
+  ALL_NON_EXCLUSIVE_FEATURES: --features "default unstable-locales rkyv rkyv-bytecheck serde arbitrary"
 
 on:
   push:
@@ -72,8 +72,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: |
           cargo hack check --feature-powerset --optional-deps arbitrary,serde \
-            --skip __internal_bench,iana-time-zone,oldtime,pure-rust-locales,libc,winapi,rkyv-validation,wasmbind \
-            --mutually-exclusive-features arbitrary,rkyv,rkyv-16,rkyv-32,rkyv-64,serde \
+            --skip __internal_bench,iana-time-zone,oldtime,pure-rust-locales,libc,winapi,rkyv-bytecheck,wasmbind \
+            --mutually-exclusive-features arbitrary,rkyv,serde \
             --all-targets
         # run using `bash` on all platforms for consistent
         # line-continuation marks
