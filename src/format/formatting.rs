@@ -109,7 +109,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// let mut buffer = String::new();
     /// let _ = df.write_to(&mut buffer);
     /// ```
-    pub fn write_to(&self, w: &mut impl Write) -> fmt::Result {
+    pub fn write_to(&self, w: &mut (impl Write + ?Sized)) -> fmt::Result {
         for item in self.items.clone() {
             match *item.borrow() {
                 Item::Literal(s) | Item::Space(s) => w.write_str(s),
@@ -124,14 +124,19 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 
     #[cfg(feature = "alloc")]
-    fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: Pad) -> fmt::Result {
+    fn format_numeric(
+        &self,
+        w: &mut (impl Write + ?Sized),
+        spec: &Numeric,
+        pad: Pad,
+    ) -> fmt::Result {
         use self::Numeric::*;
 
-        fn write_one(w: &mut impl Write, v: u8) -> fmt::Result {
+        fn write_one(w: &mut (impl Write + ?Sized), v: u8) -> fmt::Result {
             w.write_char((b'0' + v) as char)
         }
 
-        fn write_two(w: &mut impl Write, v: u8, pad: Pad) -> fmt::Result {
+        fn write_two(w: &mut (impl Write + ?Sized), v: u8, pad: Pad) -> fmt::Result {
             let ones = b'0' + v % 10;
             match (v / 10, pad) {
                 (0, Pad::None) => {}
@@ -142,7 +147,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         }
 
         #[inline]
-        fn write_year(w: &mut impl Write, year: i32, pad: Pad) -> fmt::Result {
+        fn write_year(w: &mut (impl Write + ?Sized), year: i32, pad: Pad) -> fmt::Result {
             if (1000..=9999).contains(&year) {
                 // fast path
                 write_hundreds(w, (year / 100) as u8)?;
@@ -153,7 +158,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         }
 
         fn write_n(
-            w: &mut impl Write,
+            w: &mut (impl Write + ?Sized),
             n: usize,
             v: i64,
             pad: Pad,
@@ -214,7 +219,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 
     #[cfg(feature = "alloc")]
-    fn format_fixed(&self, w: &mut impl Write, spec: &Fixed) -> fmt::Result {
+    fn format_fixed(&self, w: &mut (impl Write + ?Sized), spec: &Fixed) -> fmt::Result {
         use Fixed::*;
         use InternalInternal::*;
 
@@ -387,7 +392,7 @@ pub fn format_item(
 #[cfg(any(feature = "alloc", feature = "serde"))]
 impl OffsetFormat {
     /// Writes an offset from UTC with the format defined by `self`.
-    fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
+    fn format(&self, w: &mut (impl Write + ?Sized), off: FixedOffset) -> fmt::Result {
         let off = off.local_minus_utc();
         if self.allow_zulu && off == 0 {
             w.write_char('Z')?;
@@ -496,7 +501,7 @@ pub enum SecondsFormat {
 #[inline]
 #[cfg(any(feature = "alloc", feature = "serde"))]
 pub(crate) fn write_rfc3339(
-    w: &mut impl Write,
+    w: &mut (impl Write + ?Sized),
     dt: NaiveDateTime,
     off: FixedOffset,
     secform: SecondsFormat,
@@ -560,7 +565,7 @@ pub(crate) fn write_rfc3339(
 #[cfg(feature = "alloc")]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 pub(crate) fn write_rfc2822(
-    w: &mut impl Write,
+    w: &mut (impl Write + ?Sized),
     dt: NaiveDateTime,
     off: FixedOffset,
 ) -> fmt::Result {
@@ -605,7 +610,7 @@ pub(crate) fn write_rfc2822(
 }
 
 /// Equivalent to `{:02}` formatting for n < 100.
-pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
+pub(crate) fn write_hundreds(w: &mut (impl Write + ?Sized), n: u8) -> fmt::Result {
     if n >= 100 {
         return Err(fmt::Error);
     }
