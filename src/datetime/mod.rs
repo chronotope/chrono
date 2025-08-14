@@ -903,13 +903,34 @@ impl DateTime<Utc> {
     /// let timestamp_nanos: i64 = -2208936075_000_000_000; // Mon, 1 Jan 1900 14:38:45 UTC
     /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
     /// assert_eq!(timestamp_nanos, dt.timestamp_nanos_opt().unwrap());
+    ///
+    /// // the maximum and minimum values of i64 can be represented as a timestamp with nanosecond precision
+    /// let timestamp_nanos: i64 = i64::MIN;
+    /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert_eq!(timestamp_nanos, dt.timestamp_nanos_opt().unwrap());
+    ///
+    /// let timestamp_nanos: i64 = i64::MAX;
+    /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert_eq!(timestamp_nanos, dt.timestamp_nanos_opt().unwrap());
     /// ```
     #[inline]
     #[must_use]
     pub const fn from_timestamp_nanos(nanos: i64) -> Self {
+        // add expect here to make compiler happy, as we can call `unwrap` in const functions
+        expect(Self::from_timestamp_nanos_opt(nanos), "timestamp in nanos is always in range")
+    }
+
+    /// Creates a new [`DateTime<Utc>`] from the number of non-leap nanoseconds
+    ///  since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
+    ///  This is an infallible version of `from_timestamp_nanos`. please see more detail in there.
+    #[inline]
+    #[must_use]
+    pub const fn from_timestamp_nanos_opt(nanos: i64) -> Option<Self> {
         let secs = nanos.div_euclid(1_000_000_000);
         let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
-        expect(Self::from_timestamp(secs, nsecs), "timestamp in nanos is always in range")
+
+        // this would never fail as the input is always valid
+        Self::from_timestamp(secs, nsecs)
     }
 
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
