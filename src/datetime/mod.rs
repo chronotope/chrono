@@ -848,13 +848,24 @@ impl DateTime<Utc> {
     /// let timestamp_nanos: i64 = -2208936075_000_000_000; // Mon, 1 Jan 1900 14:38:45 UTC
     /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
     /// assert_eq!(timestamp_nanos, dt.timestamp_nanos_opt().unwrap());
+    ///
+    /// // the maximum and minimum values of i64 can be represented as a timestamp with nanosecond precision
+    /// let timestamp_nanos: i64 = i64::MIN;
+    /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert_eq!(timestamp_nanos, dt.timestamp_nanos_opt().unwrap());
+    ///
+    /// let timestamp_nanos: i64 = i64::MAX;
+    /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert_eq!(timestamp_nanos, dt.timestamp_nanos_opt().unwrap());
     /// ```
     #[inline]
     #[must_use]
     pub const fn from_timestamp_nanos(nanos: i64) -> Self {
         let secs = nanos.div_euclid(1_000_000_000);
         let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
-        expect(Self::from_timestamp(secs, nsecs), "timestamp in nanos is always in range")
+
+        // this would never fail as the input is always valid
+        Self::from_timestamp(secs, nsecs).unwrap()
     }
 
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
