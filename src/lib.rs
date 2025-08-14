@@ -512,8 +512,8 @@
 extern crate alloc;
 
 mod time_delta;
-#[cfg(feature = "std")]
 #[doc(no_inline)]
+#[cfg(any(feature = "std", feature = "core-error"))]
 pub use time_delta::OutOfRangeError;
 pub use time_delta::TimeDelta;
 
@@ -689,6 +689,9 @@ impl fmt::Debug for OutOfRange {
 
 #[cfg(feature = "std")]
 impl std::error::Error for OutOfRange {}
+
+#[cfg(all(not(feature = "std"), feature = "core-error"))]
+impl core::error::Error for OutOfRange {}
 
 /// Workaround because `?` is not (yet) available in const context.
 #[macro_export]
