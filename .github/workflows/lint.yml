@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc
@@ -44,20 +44,20 @@ jobs:
     container:
       image: tamasfe/taplo:0.8.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: taplo lint
       - run: taplo fmt --check --diff
 
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: EmbarkStudios/cargo-deny-action@v2
 
   check-doc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-deadlinks
       - run: cargo deadlinks -- ${{ env.ALL_NON_EXCLUSIVE_FEATURES }}
@@ -68,7 +68,7 @@ jobs:
   cffconvert:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - uses: citation-file-format/cffconvert-github-action@2.0.0
