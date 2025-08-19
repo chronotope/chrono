@@ -867,7 +867,7 @@ impl DateTime<Utc> {
 
     /// Creates a new [`DateTime<Utc>`] from the number of non-leap nanoseconds
     ///  since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
-    ///  This is an infallible version of `from_timestamp_nanos`. please see more detail in there.
+    ///  This is an infallible version of [`from_timestamp_nanos`](Self::from_timestamp_nanos). Please see more detail in there.
     #[inline]
     #[must_use]
     pub const fn from_timestamp_nanos_opt(nanos: i64) -> Option<Self> {
