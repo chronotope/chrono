@@ -426,22 +426,6 @@ impl<'a> StrftimeItems<'a> {
             .collect()
     }
 
-    fn error<'b>(
-        &mut self,
-        original: &'b str,
-        error_len: &mut usize,
-        ch: Option<char>,
-    ) -> (&'b str, Item<'b>) {
-        if !self.lenient {
-            return (&original[*error_len..], Item::Error);
-        }
-
-        if let Some(c) = ch {
-            *error_len -= c.len_utf8();
-        }
-        (&original[*error_len..], Item::Literal(&original[..*error_len]))
-    }
-
     fn parse_next_item(&mut self, mut remainder: &'a str) -> Option<(&'a str, Item<'a>)> {
         use InternalInternal::*;
         use Item::{Literal, Space};
@@ -730,6 +714,22 @@ impl<'a> StrftimeItems<'a> {
                 Some((remainder, item))
             }
         }
+    }
+
+    fn error<'b>(
+        &mut self,
+        original: &'b str,
+        error_len: &mut usize,
+        ch: Option<char>,
+    ) -> (&'b str, Item<'b>) {
+        if !self.lenient {
+            return (&original[*error_len..], Item::Error);
+        }
+
+        if let Some(c) = ch {
+            *error_len -= c.len_utf8();
+        }
+        (&original[*error_len..], Item::Literal(&original[..*error_len]))
     }
 
     #[cfg(feature = "unstable-locales")]
