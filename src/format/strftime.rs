@@ -1199,4 +1199,18 @@ mod tests {
             "2014-05-07T12:34:56+0000%Q%.2f%%"
         );
     }
+
+    /// Regression test for https://github.com/chronotope/chrono/issues/1725
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_finite() {
+        let mut i = 0;
+        for item in StrftimeItems::new("%2f") {
+            println!("{:?}", item);
+            i += 1;
+            if i > 10 {
+                panic!("infinite loop");
+            }
+        }
+    }
 }
