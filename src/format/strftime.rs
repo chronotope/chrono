@@ -427,33 +427,6 @@ impl<'a> StrftimeItems<'a> {
     }
 }
 
-const HAVE_ALTERNATES: &str = "z";
-
-impl<'a> Iterator for StrftimeItems<'a> {
-    type Item = Item<'a>;
-
-    fn next(&mut self) -> Option<Item<'a>> {
-        // We have items queued to return from a specifier composed of multiple formatting items.
-        if let Some((item, remainder)) = self.queue.split_first() {
-            self.queue = remainder;
-            return Some(item.clone());
-        }
-
-        // We are in the middle of parsing the localized formatting string of a specifier.
-        #[cfg(feature = "unstable-locales")]
-        if !self.locale_str.is_empty() {
-            let (remainder, item) = self.parse_next_item(self.locale_str)?;
-            self.locale_str = remainder;
-            return Some(item);
-        }
-
-        // Normal: we are parsing the formatting string.
-        let (remainder, item) = self.parse_next_item(self.remainder)?;
-        self.remainder = remainder;
-        Some(item)
-    }
-}
-
 impl<'a> StrftimeItems<'a> {
     fn error<'b>(
         &mut self,
@@ -778,6 +751,33 @@ impl<'a> StrftimeItems<'a> {
         }
     }
 }
+
+impl<'a> Iterator for StrftimeItems<'a> {
+    type Item = Item<'a>;
+
+    fn next(&mut self) -> Option<Item<'a>> {
+        // We have items queued to return from a specifier composed of multiple formatting items.
+        if let Some((item, remainder)) = self.queue.split_first() {
+            self.queue = remainder;
+            return Some(item.clone());
+        }
+
+        // We are in the middle of parsing the localized formatting string of a specifier.
+        #[cfg(feature = "unstable-locales")]
+        if !self.locale_str.is_empty() {
+            let (remainder, item) = self.parse_next_item(self.locale_str)?;
+            self.locale_str = remainder;
+            return Some(item);
+        }
+
+        // Normal: we are parsing the formatting string.
+        let (remainder, item) = self.parse_next_item(self.remainder)?;
+        self.remainder = remainder;
+        Some(item)
+    }
+}
+
+const HAVE_ALTERNATES: &str = "z";
 
 #[cfg(test)]
 mod tests {
