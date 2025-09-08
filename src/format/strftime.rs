@@ -431,12 +431,9 @@ impl<'a> StrftimeItems<'a> {
         use Item::{Literal, Space};
         use Numeric::*;
 
-        match remainder.chars().next() {
-            // we are done
-            None => None,
-
+        match remainder.chars().next()? {
             // the next item is a specifier
-            Some('%') => {
+            '%' => {
                 let original = remainder;
                 remainder = &remainder[1..];
                 let mut error_len = 0;
@@ -664,7 +661,7 @@ impl<'a> StrftimeItems<'a> {
             }
 
             // the next item is space
-            Some(c) if c.is_whitespace() => {
+            c if c.is_whitespace() => {
                 // `%` is not a whitespace, so `c != '%'` is redundant
                 let nextspec =
                     remainder.find(|c: char| !c.is_whitespace()).unwrap_or(remainder.len());
