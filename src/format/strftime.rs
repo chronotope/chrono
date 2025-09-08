@@ -425,9 +425,7 @@ impl<'a> StrftimeItems<'a> {
             })
             .collect()
     }
-}
 
-impl<'a> StrftimeItems<'a> {
     fn error<'b>(
         &mut self,
         original: &'b str,
