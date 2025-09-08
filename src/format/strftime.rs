@@ -431,35 +431,6 @@ impl<'a> StrftimeItems<'a> {
         use Item::{Literal, Space};
         use Numeric::*;
 
-        static D_FMT: &[Item<'static>] =
-            &[num0(Month), Literal("/"), num0(Day), Literal("/"), num0(YearMod100)];
-        static D_T_FMT: &[Item<'static>] = &[
-            fixed(Fixed::ShortWeekdayName),
-            Space(" "),
-            fixed(Fixed::ShortMonthName),
-            Space(" "),
-            nums(Day),
-            Space(" "),
-            num0(Hour),
-            Literal(":"),
-            num0(Minute),
-            Literal(":"),
-            num0(Second),
-            Space(" "),
-            num0(Year),
-        ];
-        static T_FMT: &[Item<'static>] =
-            &[num0(Hour), Literal(":"), num0(Minute), Literal(":"), num0(Second)];
-        static T_FMT_AMPM: &[Item<'static>] = &[
-            num0(Hour12),
-            Literal(":"),
-            num0(Minute),
-            Literal(":"),
-            num0(Second),
-            Space(" "),
-            fixed(Fixed::UpperAmPm),
-        ];
-
         match remainder.chars().next() {
             // we are done
             None => None,
@@ -774,6 +745,45 @@ impl<'a> Iterator for StrftimeItems<'a> {
         Some(item)
     }
 }
+
+static D_FMT: &[Item<'static>] = &[
+    num0(Numeric::Month),
+    Item::Literal("/"),
+    num0(Numeric::Day),
+    Item::Literal("/"),
+    num0(Numeric::YearMod100),
+];
+static D_T_FMT: &[Item<'static>] = &[
+    fixed(Fixed::ShortWeekdayName),
+    Item::Space(" "),
+    fixed(Fixed::ShortMonthName),
+    Item::Space(" "),
+    nums(Numeric::Day),
+    Item::Space(" "),
+    num0(Numeric::Hour),
+    Item::Literal(":"),
+    num0(Numeric::Minute),
+    Item::Literal(":"),
+    num0(Numeric::Second),
+    Item::Space(" "),
+    num0(Numeric::Year),
+];
+static T_FMT: &[Item<'static>] = &[
+    num0(Numeric::Hour),
+    Item::Literal(":"),
+    num0(Numeric::Minute),
+    Item::Literal(":"),
+    num0(Numeric::Second),
+];
+static T_FMT_AMPM: &[Item<'static>] = &[
+    num0(Numeric::Hour12),
+    Item::Literal(":"),
+    num0(Numeric::Minute),
+    Item::Literal(":"),
+    num0(Numeric::Second),
+    Item::Space(" "),
+    fixed(Fixed::UpperAmPm),
+];
 
 const HAVE_ALTERNATES: &str = "z";
 
