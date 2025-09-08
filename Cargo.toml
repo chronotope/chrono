@@ -49,10 +49,10 @@ wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }       # contains FFI bindings for the JS Date API
 
 [target.'cfg(windows)'.dependencies]
-windows-link = { version = "0.1", optional = true }
+windows-link = { version = "0.2", optional = true }
 
 [target.'cfg(windows)'.dev-dependencies]
-windows-bindgen = { version = "0.62" } # MSRV is 1.74
+windows-bindgen = { version = "0.63" } # MSRV is 1.74
 
 [target.'cfg(unix)'.dependencies]
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
