@@ -11,7 +11,7 @@ use super::scan;
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
 use super::{ParseError, ParseResult};
-use crate::{DateTime, FixedOffset, Weekday};
+use crate::{DateTime, FixedOffset, MappedLocalTime, NaiveDate, NaiveTime, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<()> {
     p.set_weekday(match v {
@@ -151,7 +151,15 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     Ok((s, ()))
 }
 
-pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
+#[inline]
+fn get_digit<T: From<u8>>(bytes: &[u8], index: usize) -> ParseResult<T> {
+    match bytes.get(index) {
+        Some(c) if c.is_ascii_digit() => Ok(T::from(c - b'0')),
+        _ => Err(INVALID),
+    }
+}
+
+pub(crate) fn parse_rfc3339(mut s: &str) -> ParseResult<DateTime<FixedOffset>> {
     macro_rules! try_consume {
         ($e:expr) => {{
             let (s_, v) = $e?;
@@ -189,40 +197,108 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     //
     // - For readability a full-date and a full-time may be separated by a space character.
 
-    parsed.set_year(try_consume!(scan::number(s, 4, 4)))?;
-    s = scan::char(s, b'-')?;
-    parsed.set_month(try_consume!(scan::number(s, 2, 2)))?;
-    s = scan::char(s, b'-')?;
-    parsed.set_day(try_consume!(scan::number(s, 2, 2)))?;
-
-    s = match s.as_bytes().first() {
-        Some(&b't' | &b'T' | &b' ') => &s[1..],
-        Some(_) => return Err(INVALID),
-        None => return Err(TOO_SHORT),
-    };
-
-    parsed.set_hour(try_consume!(scan::number(s, 2, 2)))?;
-    s = scan::char(s, b':')?;
-    parsed.set_minute(try_consume!(scan::number(s, 2, 2)))?;
-    s = scan::char(s, b':')?;
-    parsed.set_second(try_consume!(scan::number(s, 2, 2)))?;
-    if s.starts_with('.') {
-        let nanosecond = try_consume!(scan::nanosecond(&s[1..]));
-        parsed.set_nanosecond(nanosecond)?;
+    let bytes = s.as_bytes();
+    if bytes.len() < 20 {
+        return Err(TOO_SHORT);
     }
 
+    let year = {
+        let y1: i32 = get_digit(bytes, 0)?;
+        let y2: i32 = get_digit(bytes, 1)?;
+        let y3: i32 = get_digit(bytes, 2)?;
+        let y4: i32 = get_digit(bytes, 3)?;
+        y1 * 1000 + y2 * 100 + y3 * 10 + y4
+    };
+    if bytes.get(4) != Some(&b'-') {
+        return Err(INVALID);
+    }
+    let month = {
+        let m1: u32 = get_digit(bytes, 5)?;
+        let m2: u32 = get_digit(bytes, 6)?;
+        m1 * 10 + m2
+    };
+    if bytes.get(7) != Some(&b'-') {
+        return Err(INVALID);
+    }
+    let day = {
+        let d1: u32 = get_digit(bytes, 8)?;
+        let d2: u32 = get_digit(bytes, 9)?;
+        d1 * 10 + d2
+    };
+    if !matches!(bytes.get(10), Some(&b't' | &b'T' | &b' ')) {
+        return Err(INVALID);
+    }
+    let hour = {
+        let h1: u32 = get_digit(bytes, 11)?;
+        let h2: u32 = get_digit(bytes, 12)?;
+        h1 * 10 + h2
+    };
+    if bytes.get(13) != Some(&b':') {
+        return Err(INVALID);
+    }
+    let min: u32 = {
+        let m1: u32 = get_digit(bytes, 14)?;
+        let m2: u32 = get_digit(bytes, 15)?;
+        m1 * 10 + m2
+    };
+    if bytes.get(16) != Some(&b':') {
+        return Err(INVALID);
+    }
+    let (sec, extra_nanos) = {
+        let m1: u32 = get_digit(bytes, 17)?;
+        let m2: u32 = get_digit(bytes, 18)?;
+        let secs: u32 = m1 * 10 + m2;
+        if secs == 60 {
+            // rfc3339 allows leap seconds
+            (59, 1_000_000_000)
+        } else {
+            (secs, 0)
+        }
+    };
+
+    let max_days = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) => 29,
+        2 => 28,
+        _ => return Err(OUT_OF_RANGE),
+    };
+
+    if day < 1 || day > max_days || hour > 23 || min > 59 || sec > 59 {
+        return Err(OUT_OF_RANGE);
+    }
+
+    let nano = if bytes.get(19) == Some(&b'.') {
+        let nanosecond = try_consume!(scan::nanosecond(&s[20..]));
+        extra_nanos + nanosecond
+    } else {
+        s = &s[19..];
+        extra_nanos
+    };
+
     let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
-    // This range check is similar to the one in `FixedOffset::east_opt`, so it would be redundant.
-    // But it is possible to read the offset directly from `Parsed`. We want to only successfully
-    // populate `Parsed` if the input is fully valid RFC 3339.
     // Max for the hours field is `23`, and for the minutes field `59`.
     const MAX_RFC3339_OFFSET: i32 = (23 * 60 + 59) * 60;
     if !(-MAX_RFC3339_OFFSET..=MAX_RFC3339_OFFSET).contains(&offset) {
         return Err(OUT_OF_RANGE);
     }
-    parsed.set_offset(i64::from(offset))?;
+    let date = NaiveDate::from_ymd_opt(year, month, day)
+        .expect("validity should've been checked when parsing");
+    let time = NaiveTime::from_hms_nano_opt(hour, min, sec, nano)
+        .expect("validity should've been checked when parsing");
+    let tz = FixedOffset::east_opt(offset).expect("validity should've been checked when parsing");
+    let datetime = match date.and_time(time).and_local_timezone(tz) {
+        MappedLocalTime::Single(dt) => dt,
+        // `FixedOffset::with_ymd_and_hms` doesn't return `MappedLocalTime::Ambiguous`
+        // and returns `MappedLocalTime::None` on invalid data
+        MappedLocalTime::Ambiguous(_, _) | MappedLocalTime::None => unreachable!(),
+    };
 
-    Ok((s, ()))
+    if !s.is_empty() {
+        return Err(TOO_LONG);
+    }
+
+    Ok(datetime)
 }
 
 /// Tries to parse given string into `parsed` with given formatting items.
@@ -1830,37 +1906,34 @@ mod tests {
                 "2015-01-20T17:35:20.000000000452−08:00",
                 Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
             ), // too small with MINUS SIGN (U+2212)
-            (
-                "2023-11-05T01:30:00-04:00",
-                Ok(ymd_hmsn(2023, 11, 5, 1, 30, 0, 0, -4)),
-            ), // ambiguous timestamp
+            ("2023-11-05T01:30:00-04:00", Ok(ymd_hmsn(2023, 11, 5, 1, 30, 0, 0, -4))), // ambiguous would've been here timestamp
             ("2015-01-20 17:35:20-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // without 'T'
             ("2015-01-20_17:35:20-08:00", Err(INVALID)), // wrong date time separator
             ("2015/01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char YM
             ("2015-01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char MD
             ("2015-01-20T17-35-20.001-08:00", Err(INVALID)), // wrong separator char HM
             ("2015-01-20T17-35:20.001-08:00", Err(INVALID)), // wrong separator char MS
-            ("-01-20T17:35:20-08:00", Err(INVALID)),         // missing year
-            ("99-01-20T17:35:20-08:00", Err(INVALID)),       // bad year format
-            ("99999-01-20T17:35:20-08:00", Err(INVALID)),    // bad year value
-            ("-2000-01-20T17:35:20-08:00", Err(INVALID)),    // bad year value
+            ("-01-20T17:35:20-08:00", Err(INVALID)),     // missing year
+            ("99-01-20T17:35:20-08:00", Err(INVALID)),   // bad year format
+            ("99999-01-20T17:35:20-08:00", Err(INVALID)), // bad year value
+            ("-2000-01-20T17:35:20-08:00", Err(INVALID)), // bad year value
             ("2015-00-30T17:35:20-08:00", Err(OUT_OF_RANGE)), // bad month value
             ("2015-02-30T17:35:20-08:00", Err(OUT_OF_RANGE)), // bad day of month value
             ("2015-01-20T25:35:20-08:00", Err(OUT_OF_RANGE)), // bad hour value
             ("2015-01-20T17:65:20-08:00", Err(OUT_OF_RANGE)), // bad minute value
             ("2015-01-20T17:35:90-08:00", Err(OUT_OF_RANGE)), // bad second value
             ("2015-01-20T17:35:20-24:00", Err(OUT_OF_RANGE)), // bad offset value
-            ("15-01-20T17:35:20-08:00", Err(INVALID)),       // bad year format
-            ("15-01-20T17:35:20-08:00:00", Err(INVALID)),    // bad year format, bad offset format
-            ("2015-01-20T17:35:2008:00", Err(INVALID)),      // missing offset sign
-            ("2015-01-20T17:35:20 08:00", Err(INVALID)),     // missing offset sign
-            ("2015-01-20T17:35:20Zulu", Err(TOO_LONG)),      // bad offset format
-            ("2015-01-20T17:35:20 Zulu", Err(INVALID)),      // bad offset format
-            ("2015-01-20T17:35:20GMT", Err(INVALID)),        // bad offset format
-            ("2015-01-20T17:35:20 GMT", Err(INVALID)),       // bad offset format
-            ("2015-01-20T17:35:20+GMT", Err(INVALID)),       // bad offset format
-            ("2015-01-20T17:35:20++08:00", Err(INVALID)),    // bad offset format
-            ("2015-01-20T17:35:20--08:00", Err(INVALID)),    // bad offset format
+            ("15-01-20T17:35:20-08:00", Err(INVALID)),   // bad year format
+            ("15-01-20T17:35:20-08:00:00", Err(INVALID)), // bad year format, bad offset format
+            ("2015-01-20T17:35:2008:00", Err(INVALID)),  // missing offset sign
+            ("2015-01-20T17:35:20 08:00", Err(INVALID)), // missing offset sign
+            ("2015-01-20T17:35:20Zulu", Err(TOO_LONG)),  // bad offset format
+            ("2015-01-20T17:35:20 Zulu", Err(INVALID)),  // bad offset format
+            ("2015-01-20T17:35:20GMT", Err(INVALID)),    // bad offset format
+            ("2015-01-20T17:35:20 GMT", Err(INVALID)),   // bad offset format
+            ("2015-01-20T17:35:20+GMT", Err(INVALID)),   // bad offset format
+            ("2015-01-20T17:35:20++08:00", Err(INVALID)), // bad offset format
+            ("2015-01-20T17:35:20--08:00", Err(INVALID)), // bad offset format
             ("2015-01-20T17:35:20−−08:00", Err(INVALID)), // bad offset format with MINUS SIGN (U+2212)
             ("2015-01-20T17:35:20±08:00", Err(INVALID)),  // bad offset sign
             ("2015-01-20T17:35:20-08-00", Err(INVALID)),  // bad offset separator
