@@ -19,6 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
       - run: cargo test ${{ env.ALL_NON_EXCLUSIVE_FEATURES }} --color=always -- --color=always
 
@@ -52,6 +54,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust_version }}
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --manifest-path bench/Cargo.toml --benches
       - run: cargo check --manifest-path fuzz/Cargo.toml --all-targets
@@ -68,6 +71,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
       - run: |
@@ -130,6 +135,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v5
       - uses: jetli/wasm-pack-action@v0.4.0
