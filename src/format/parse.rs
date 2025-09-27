@@ -419,7 +419,7 @@ where
 
                     &Nanosecond => {
                         if s.starts_with('.') {
-                            let nano = try_consume!(scan::nanosecond(&s[1..]));
+                            let nano = i64::from(try_consume!(scan::nanosecond(&s[1..])));
                             parsed.set_nanosecond(nano)?;
                         }
                     }
