@@ -208,7 +208,7 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     parsed.set_second(try_consume!(scan::number(s, 2, 2)))?;
     if s.starts_with('.') {
         let nanosecond = try_consume!(scan::nanosecond(&s[1..]));
-        parsed.set_nanosecond(nanosecond)?;
+        parsed.set_nanosecond(nanosecond as i64)?;
     }
 
     let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
@@ -420,7 +420,7 @@ where
                     &Nanosecond => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
-                            parsed.set_nanosecond(nano)?;
+                            parsed.set_nanosecond(nano as i64)?;
                         }
                     }
 
