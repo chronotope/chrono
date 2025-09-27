@@ -1830,13 +1830,21 @@ mod tests {
                 "2015-01-20T17:35:20.000000000452−08:00",
                 Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
             ), // too small with MINUS SIGN (U+2212)
+            (
+                "2023-11-05T01:30:00-04:00",
+                Ok(ymd_hmsn(2023, 11, 5, 1, 30, 0, 0, -4)),
+            ), // ambiguous timestamp
             ("2015-01-20 17:35:20-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // without 'T'
-            ("2015/01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char YMD
-            ("2015-01-20T17-35-20.001-08:00", Err(INVALID)), // wrong separator char HMS
+            ("2015-01-20_17:35:20-08:00", Err(INVALID)), // wrong date time separator
+            ("2015/01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char YM
+            ("2015-01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char MD
+            ("2015-01-20T17-35-20.001-08:00", Err(INVALID)), // wrong separator char HM
+            ("2015-01-20T17-35:20.001-08:00", Err(INVALID)), // wrong separator char MS
             ("-01-20T17:35:20-08:00", Err(INVALID)),         // missing year
             ("99-01-20T17:35:20-08:00", Err(INVALID)),       // bad year format
             ("99999-01-20T17:35:20-08:00", Err(INVALID)),    // bad year value
             ("-2000-01-20T17:35:20-08:00", Err(INVALID)),    // bad year value
+            ("2015-00-30T17:35:20-08:00", Err(OUT_OF_RANGE)), // bad month value
             ("2015-02-30T17:35:20-08:00", Err(OUT_OF_RANGE)), // bad day of month value
             ("2015-01-20T25:35:20-08:00", Err(OUT_OF_RANGE)), // bad hour value
             ("2015-01-20T17:65:20-08:00", Err(OUT_OF_RANGE)), // bad minute value
