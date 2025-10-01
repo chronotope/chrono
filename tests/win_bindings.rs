@@ -1,5 +1,3 @@
-#![cfg(all(windows, feature = "clock", feature = "std"))]
-
 use std::fs;
 use windows_bindgen::bindgen;
 
