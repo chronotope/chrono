@@ -52,9 +52,6 @@ js-sys = { version = "0.3", optional = true }       # contains FFI bindings for 
 [target.'cfg(windows)'.dependencies]
 windows-link = { version = "0.2", optional = true }
 
-[target.'cfg(windows)'.dev-dependencies]
-windows-bindgen = { version = "0.64" } # MSRV is 1.74
-
 [target.'cfg(unix)'.dependencies]
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
 
@@ -63,6 +60,7 @@ serde_json = { version = "1" }
 serde_derive = { version = "1", default-features = false }
 similar-asserts = { version = "1.6.1" }
 bincode = { version = "1.3.0" }
+windows-bindgen = { version = "0.64" }                     # MSRV is 1.74
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dev-dependencies]
 wasm-bindgen-test = "0.3"
