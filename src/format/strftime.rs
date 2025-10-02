@@ -189,6 +189,7 @@ use alloc::vec::Vec;
 /// [`DateTime`]: crate::DateTime
 /// [`format::parse()`]: crate::format::parse()
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct StrftimeItems<'a> {
     /// Remaining portion of the string.
     remainder: &'a str,

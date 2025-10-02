@@ -551,6 +551,16 @@ where
     }
 }
 
+#[cfg(feature = "defmt")]
+impl<Tz: TimeZone> defmt::Format for Date<Tz>
+where
+    Tz::Offset: defmt::Format,
+{
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "{}{}", self.naive_local(), self.offset);
+    }
+}
+
 // Note that implementation of Arbitrary cannot be automatically derived for Date<Tz>, due to
 // the nontrivial bound <Tz as TimeZone>::Offset: Arbitrary.
 #[cfg(all(feature = "arbitrary", feature = "std"))]

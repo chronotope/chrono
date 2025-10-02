@@ -59,6 +59,7 @@ const SECS_PER_WEEK: i64 = 604_800;
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TimeDelta {
     secs: i64,
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
@@ -624,6 +625,7 @@ impl fmt::Display for TimeDelta {
 /// *seconds*, while this module supports signed range of up to
 /// `i64::MAX` of *milliseconds*.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct OutOfRangeError(());
 
 impl fmt::Display for OutOfRangeError {
