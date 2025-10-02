@@ -126,6 +126,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// ```
 #[allow(clippy::manual_non_exhaustive)]
 #[derive(Clone, PartialEq, Eq, Debug, Default, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Parsed {
     #[doc(hidden)]
     pub year: Option<i32>,

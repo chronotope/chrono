@@ -474,6 +474,7 @@ impl OffsetFormat {
 ///
 /// See the `TimeZone::to_rfc3339_opts` function for usage.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[allow(clippy::manual_non_exhaustive)]
 pub enum SecondsFormat {
     /// Format whole seconds only, with no decimal point nor subseconds.

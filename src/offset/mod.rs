@@ -76,7 +76,7 @@ pub use self::utc::Utc;
 /// The type of `T` is usually a [`DateTime`] but may also be only an offset.
 pub type MappedLocalTime<T> = LocalResult<T>;
 #[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
-
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 /// Old name of [`MappedLocalTime`]. See that type for more documentation.
 pub enum LocalResult<T> {
     /// The local time maps to a single unique result.

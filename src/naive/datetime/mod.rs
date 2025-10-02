@@ -2057,6 +2057,13 @@ impl fmt::Debug for NaiveDateTime {
     }
 }
 
+#[cfg(feature = "defmt")]
+impl defmt::Format for NaiveDateTime {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "{}T{}", self.date, self.time);
+    }
+}
+
 /// The `Display` output of the naive date and time `dt` is the same as
 /// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](crate::format::strftime).
 ///

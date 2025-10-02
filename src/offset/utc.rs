@@ -150,3 +150,10 @@ impl fmt::Display for Utc {
         write!(f, "UTC")
     }
 }
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for Utc {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "Z");
+    }
+}
