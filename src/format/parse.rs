@@ -11,7 +11,7 @@ use super::scan;
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
 use super::{ParseError, ParseResult};
-use crate::{DateTime, FixedOffset, Weekday};
+use crate::{DateTime, FixedOffset, MappedLocalTime, NaiveDate, NaiveTime, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<()> {
     p.set_weekday(match v {
@@ -151,7 +151,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     Ok((s, ()))
 }
 
-pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
+pub(crate) fn parse_rfc3339(mut s: &str) -> ParseResult<DateTime<FixedOffset>> {
     macro_rules! try_consume {
         ($e:expr) => {{
             let (s_, v) = $e?;
@@ -189,40 +189,81 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     //
     // - For readability a full-date and a full-time may be separated by a space character.
 
-    parsed.set_year(try_consume!(scan::number(s, 4, 4)))?;
-    s = scan::char(s, b'-')?;
-    parsed.set_month(try_consume!(scan::number(s, 2, 2)))?;
-    s = scan::char(s, b'-')?;
-    parsed.set_day(try_consume!(scan::number(s, 2, 2)))?;
+    let bytes = s.as_bytes();
+    if bytes.len() < 19 {
+        return Err(TOO_SHORT);
+    }
 
-    s = match s.as_bytes().first() {
-        Some(&b't' | &b'T' | &b' ') => &s[1..],
-        Some(_) => return Err(INVALID),
-        None => return Err(TOO_SHORT),
+    let fixed = <&[u8; 19]>::try_from(&bytes[..19]).unwrap(); // we just checked the length
+    let year = digit(fixed, 0)? as u16 * 1000
+        + digit(fixed, 1)? as u16 * 100
+        + digit(fixed, 2)? as u16 * 10
+        + digit(fixed, 3)? as u16;
+    if bytes.get(4) != Some(&b'-') {
+        return Err(INVALID);
+    }
+
+    let month = digit(fixed, 5)? * 10 + digit(fixed, 6)?;
+    if bytes.get(7) != Some(&b'-') {
+        return Err(INVALID);
+    }
+
+    let day = digit(fixed, 8)? * 10 + digit(fixed, 9)?;
+    let date =
+        NaiveDate::from_ymd_opt(year as i32, month as u32, day as u32).ok_or(OUT_OF_RANGE)?;
+
+    if !matches!(bytes.get(10), Some(&b't' | &b'T' | &b' ')) {
+        return Err(INVALID);
+    }
+
+    let hour = digit(fixed, 11)? * 10 + digit(fixed, 12)?;
+    if bytes.get(13) != Some(&b':') {
+        return Err(INVALID);
+    }
+
+    let min = digit(fixed, 14)? * 10 + digit(fixed, 15)?;
+    if bytes.get(16) != Some(&b':') {
+        return Err(INVALID);
+    }
+
+    let sec = digit(fixed, 17)? * 10 + digit(fixed, 18)?;
+    let (sec, extra_nanos) = match sec {
+        60 => (59, 1_000_000_000), // rfc3339 allows leap seconds
+        _ => (sec, 0),
     };
 
-    parsed.set_hour(try_consume!(scan::number(s, 2, 2)))?;
-    s = scan::char(s, b':')?;
-    parsed.set_minute(try_consume!(scan::number(s, 2, 2)))?;
-    s = scan::char(s, b':')?;
-    parsed.set_second(try_consume!(scan::number(s, 2, 2)))?;
-    if s.starts_with('.') {
-        let nanosecond = try_consume!(scan::nanosecond(&s[1..]));
-        parsed.set_nanosecond(nanosecond as i64)?;
-    }
+    let nano = if bytes.get(19) == Some(&b'.') {
+        let nanosecond = try_consume!(scan::nanosecond(&s[20..]));
+        extra_nanos + nanosecond
+    } else {
+        s = &s[19..];
+        extra_nanos
+    };
 
-    let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
-    // This range check is similar to the one in `FixedOffset::east_opt`, so it would be redundant.
-    // But it is possible to read the offset directly from `Parsed`. We want to only successfully
-    // populate `Parsed` if the input is fully valid RFC 3339.
+    let time = NaiveTime::from_hms_nano_opt(hour as u32, min as u32, sec as u32, nano)
+        .ok_or(OUT_OF_RANGE)?;
+
     // Max for the hours field is `23`, and for the minutes field `59`.
-    const MAX_RFC3339_OFFSET: i32 = (23 * 60 + 59) * 60;
-    if !(-MAX_RFC3339_OFFSET..=MAX_RFC3339_OFFSET).contains(&offset) {
-        return Err(OUT_OF_RANGE);
+    let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
+    if !s.is_empty() {
+        return Err(TOO_LONG);
     }
-    parsed.set_offset(i64::from(offset))?;
 
-    Ok((s, ()))
+    let tz = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
+    Ok(match date.and_time(time).and_local_timezone(tz) {
+        MappedLocalTime::Single(dt) => dt,
+        // `FixedOffset::with_ymd_and_hms` doesn't return `MappedLocalTime::Ambiguous`
+        // and returns `MappedLocalTime::None` on invalid data
+        MappedLocalTime::Ambiguous(_, _) | MappedLocalTime::None => unreachable!(),
+    })
+}
+
+#[inline]
+fn digit(bytes: &[u8; 19], index: usize) -> ParseResult<u8> {
+    match bytes[index].is_ascii_digit() {
+        true => Ok(bytes[index] - b'0'),
+        false => Err(INVALID),
+    }
 }
 
 /// Tries to parse given string into `parsed` with given formatting items.
