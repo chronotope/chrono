@@ -21,8 +21,8 @@ use crate::format::Locale;
 #[cfg(feature = "alloc")]
 use crate::format::{DelayedFormat, SecondsFormat, write_rfc2822, write_rfc3339};
 use crate::format::{
-    Fixed, Item, ParseError, ParseResult, Parsed, StrftimeItems, TOO_LONG, parse,
-    parse_and_remainder, parse_rfc3339,
+    Fixed, Item, ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder,
+    parse_rfc3339,
 };
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
@@ -1068,12 +1068,7 @@ impl DateTime<FixedOffset> {
     /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
     /// values (or the other way around).
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        let mut parsed = Parsed::new();
-        let (s, _) = parse_rfc3339(&mut parsed, s)?;
-        if !s.is_empty() {
-            return Err(TOO_LONG);
-        }
-        parsed.to_datetime()
+        parse_rfc3339(s)
     }
 
     /// Parses a string from a user-specified format into a `DateTime<FixedOffset>` value.
