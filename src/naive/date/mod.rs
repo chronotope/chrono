@@ -1148,7 +1148,7 @@ impl NaiveDate {
     /// );
     /// ```
     #[must_use]
-    pub const fn signed_duration_since(self, rhs: NaiveDate) -> TimeDelta {
+    pub const fn signed_duration_since(self, rhs: Self) -> TimeDelta {
         let year1 = self.year();
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
@@ -1159,6 +1159,24 @@ impl NaiveDate {
         // The range of `TimeDelta` is ca. 585 million years, the range of `NaiveDate` ca. 525.000
         // years.
         expect(TimeDelta::try_days(days), "always in range")
+    }
+
+    /// Returns the absolute difference between two `NaiveDate`s measured as the number of days.
+    ///
+    /// This is always an integer, non-negative number, similar to `abs_diff` in `std`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::{Days, NaiveDate};
+    /// #
+    /// let date1: NaiveDate = "2020-01-01".parse().unwrap();
+    /// let date2: NaiveDate = "2020-01-31".parse().unwrap();
+    /// assert_eq!(date2.abs_diff(date1), Days::new(30));
+    /// assert_eq!(date1.abs_diff(date2), Days::new(30));
+    /// ```
+    pub const fn abs_diff(self, rhs: Self) -> Days {
+        Days::new(i32::abs_diff(self.num_days_from_ce(), rhs.num_days_from_ce()) as u64)
     }
 
     /// Returns the number of whole years from the given `base` until `self`.
