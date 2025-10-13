@@ -1,4 +1,4 @@
-use crate::{IsoWeek, Month, Weekday};
+use crate::{Days, IsoWeek, Month, Weekday};
 
 /// The common set of methods for date component.
 ///
@@ -276,6 +276,12 @@ pub trait Datelike: Sized {
         // of range. Since we are passing it directly from a verified date, we
         // know it is in range, and the result will never be `None`.
         month.num_days(self.year()).unwrap()
+    }
+
+    /// Get the difference in days between the two days,
+    /// ignoring the time component
+    fn days_between(&self, other: impl Datelike) -> Days {
+        Days::new(i32::abs_diff(self.num_days_from_ce(), other.num_days_from_ce()).into())
     }
 }
 
