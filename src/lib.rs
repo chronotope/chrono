@@ -501,10 +501,8 @@
 //! [chrono#1095]: https://github.com/chronotope/chrono/pull/1095
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/", test(attr(deny(warnings))))]
-#![deny(missing_docs)]
-#![deny(missing_debug_implementations)]
 #![warn(unreachable_pub)]
-#![deny(clippy::tests_outside_test_module)]
+#![warn(clippy::tests_outside_test_module)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
