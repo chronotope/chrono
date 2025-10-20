@@ -1184,15 +1184,15 @@ impl NaiveDate {
     /// # Errors
     ///
     /// Returns `None` if `base > self`.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use chrono::{NaiveDate};
     /// #
     /// let base: NaiveDate = "2025-01-01".parse().unwrap();
     /// let date: NaiveDate = "2030-01-01".parse().unwrap();
-    /// 
+    ///
     /// assert_eq!(date.years_since(base), Some(5))
     /// ```
     #[must_use]
