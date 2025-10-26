@@ -1975,6 +1975,53 @@ impl From<DateTime<Utc>> for js_sys::Date {
     }
 }
 
+#[cfg(all(
+    target_arch = "wasm32",
+    feature = "wasmbind",
+    not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
+))]
+mod wasm_impls {
+    use crate::{DateTime, Utc};
+
+    impl wasm_bindgen::convert::FromWasmAbi for DateTime<Utc> {
+        type Abi = <js_sys::Date as wasm_bindgen::convert::FromWasmAbi>::Abi;
+        unsafe fn from_abi(js: Self::Abi) -> Self {
+            unsafe { js_sys::Date::from_abi(js).into() }
+        }
+    }
+
+    impl wasm_bindgen::convert::IntoWasmAbi for DateTime<Utc> {
+        type Abi = <js_sys::Date as wasm_bindgen::convert::IntoWasmAbi>::Abi;
+        fn into_abi(self) -> Self::Abi {
+            js_sys::Date::from(self).into_abi()
+        }
+    }
+
+    impl wasm_bindgen::describe::WasmDescribe for DateTime<Utc> {
+        fn describe() {
+            js_sys::Date::describe()
+        }
+    }
+
+    impl wasm_bindgen::describe::WasmDescribeVector for DateTime<Utc> {
+        fn describe_vector() {
+            js_sys::Date::describe_vector()
+        }
+    }
+
+    impl wasm_bindgen::convert::OptionFromWasmAbi for DateTime<Utc> {
+        fn is_none(abi: &Self::Abi) -> bool {
+            js_sys::Date::is_none(abi)
+        }
+    }
+
+    impl wasm_bindgen::convert::OptionIntoWasmAbi for DateTime<Utc> {
+        fn none() -> Self::Abi {
+            js_sys::Date::none()
+        }
+    }
+}
+
 // Note that implementation of Arbitrary cannot be simply derived for DateTime<Tz>, due to
 // the nontrivial bound <Tz as TimeZone>::Offset: Arbitrary.
 #[cfg(all(feature = "arbitrary", feature = "std"))]
