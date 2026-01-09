@@ -4,3 +4,5 @@ private = { ignore = true }
 
 [advisories]
 yanked = "deny"
+# bincode is deprecated -- just a dev-dependency in this crate
+ignore = ["RUSTSEC-2025-0141"]
