@@ -23,10 +23,10 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 #[cfg_attr(
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug))
+    rkyv(compare(PartialEq)),
+    rkyv(derive(Clone, Copy, PartialEq, Eq, Hash, Debug))
 )]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
+#[cfg_attr(feature = "rkyv-validation", rkyv(check_bytes))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
