@@ -623,7 +623,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn to_rfc2822(&self) -> String {
         let mut result = String::with_capacity(32);
         write_rfc2822(&mut result, self.overflowing_naive_local(), self.offset.fix())
-            .expect("writing rfc2822 datetime to string should never fail");
+            .expect("date cannot be represented by RFC 2822");
         result
     }
 
