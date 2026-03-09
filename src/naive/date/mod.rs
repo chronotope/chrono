@@ -2623,7 +2623,7 @@ mod serde {
         fn test_serde_bincode() {
             // Bincode is relevant to test separately from JSON because
             // it is not self-describing.
-            use bincode::{deserialize, serialize};
+            use bincode2::{deserialize, serialize};
 
             let d = NaiveDate::from_ymd_opt(2014, 7, 24).unwrap();
             let encoded = serialize(&d).unwrap();
