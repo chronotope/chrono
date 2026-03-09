@@ -497,13 +497,27 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Panics if the date can not be represented in this format: the year may not be negative and
     /// can not have more than 4 digits.
+    #[deprecated(since = "0.5.0", note = "Use to_rfc2822_opt() instead")]
     #[cfg(feature = "alloc")]
     #[must_use]
     pub fn to_rfc2822(&self) -> String {
+        self.to_rfc2822_opt().expect("date cannot be represented by RFC 2822")
+    }
+
+    /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    ///
+    /// Returns `None` if the date can not be represented in this format.
+    /// This format does not support negative years or years greater than 9999.
+    #[cfg(feature = "alloc")]
+    #[must_use]
+    #[track_caller]
+    pub fn to_rfc2822_opt(&self) -> Option<String> {
         let mut result = String::with_capacity(32);
-        write_rfc2822(&mut result, self.overflowing_naive_local(), self.offset.fix())
-            .expect("writing rfc2822 datetime to string should never fail");
-        result
+        if write_rfc2822(&mut result, self.overflowing_naive_local(), self.offset.fix()).is_ok() {
+            Some(result)
+        } else {
+            None
+        }
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.

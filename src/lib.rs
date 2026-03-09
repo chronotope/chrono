@@ -236,7 +236,7 @@
 //! specifiers.
 //!
 //! The default `to_string` method and `{:?}` specifier also give a reasonable representation.
-//! Chrono also provides [`to_rfc2822`](DateTime::to_rfc2822) and
+//! Chrono also provides [`to_rfc2822`](DateTime::to_rfc2822_opt) and
 //! [`to_rfc3339`](DateTime::to_rfc3339) methods for well-known formats.
 //!
 //! Chrono now also provides date formatting in almost any language without the help of an
@@ -265,7 +265,7 @@
 //!
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 //! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
-//! assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
+//! assert_eq!(dt.to_rfc2822_opt(), Some("Fri, 28 Nov 2014 12:00:09 +0000".to_string()));
 //! assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
 //! assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 //!
@@ -347,7 +347,7 @@
 //!
 //! // Construct a datetime from epoch:
 //! let dt: DateTime<Utc> = DateTime::from_timestamp(1_500_000_000, 0).unwrap();
-//! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
+//! assert_eq!(dt.to_rfc2822_opt(), Some("Fri, 14 Jul 2017 02:40:00 +0000".to_string()));
 //!
 //! // Get epoch value from a datetime:
 //! let dt = DateTime::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000").unwrap();

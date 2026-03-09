@@ -633,12 +633,12 @@ fn test_datetime_rfc2822() {
 
     // timezone 0
     assert_eq!(
-        Utc.at_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc2822(),
-        "Wed, 18 Feb 2015 23:16:09 +0000"
+        Utc.at_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc2822_opt(),
+        Some("Wed, 18 Feb 2015 23:16:09 +0000".to_string())
     );
     assert_eq!(
-        Utc.at_ymd_and_hms(2015, 2, 1, 23, 16, 9).unwrap().to_rfc2822(),
-        "Sun, 1 Feb 2015 23:16:09 +0000"
+        Utc.at_ymd_and_hms(2015, 2, 1, 23, 16, 9).unwrap().to_rfc2822_opt(),
+        Some("Sun, 1 Feb 2015 23:16:09 +0000".to_string())
     );
     // timezone +05
     assert_eq!(
@@ -646,8 +646,8 @@ fn test_datetime_rfc2822() {
             NaiveDate::from_ymd(2015, 2, 18).unwrap().at_hms_milli(23, 16, 9, 150).unwrap()
         )
         .unwrap()
-        .to_rfc2822(),
-        "Wed, 18 Feb 2015 23:16:09 +0500"
+        .to_rfc2822_opt(),
+        Some("Wed, 18 Feb 2015 23:16:09 +0500".to_string())
     );
     assert_eq!(
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
@@ -675,8 +675,8 @@ fn test_datetime_rfc2822() {
             NaiveDate::from_ymd(2015, 2, 18).unwrap().at_hms_micro(23, 59, 59, 1_234_567).unwrap()
         )
         .unwrap()
-        .to_rfc2822(),
-        "Wed, 18 Feb 2015 23:59:60 +0500"
+        .to_rfc2822_opt(),
+        Some("Wed, 18 Feb 2015 23:59:60 +0500".to_string())
     );
 
     assert_eq!(
@@ -688,8 +688,8 @@ fn test_datetime_rfc2822() {
         Ok(FixedOffset::east(0).unwrap().at_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap())
     );
     assert_eq!(
-        ymdhms_micro(&edt, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc2822(),
-        "Wed, 18 Feb 2015 23:59:60 +0500"
+        ymdhms_micro(&edt, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc2822_opt(),
+        Some("Wed, 18 Feb 2015 23:59:60 +0500".to_string())
     );
     assert_eq!(
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:58 +0500"),
@@ -1443,8 +1443,7 @@ fn test_min_max_getters() {
     let beyond_max = offset_max.from_utc_datetime(NaiveDateTime::MAX);
 
     assert_eq!(format!("{:?}", beyond_min), "-262144-12-31T22:00:00-02:00");
-    // RFC 2822 doesn't support years with more than 4 digits.
-    // assert_eq!(beyond_min.to_rfc2822(), "");
+    assert!(beyond_min.to_rfc2822_opt().is_none(), "RFC 2822 doesn't support negative years.");
     #[cfg(feature = "alloc")]
     assert_eq!(beyond_min.to_rfc3339(), "-262144-12-31T22:00:00-02:00");
     #[cfg(feature = "alloc")]
@@ -1468,8 +1467,10 @@ fn test_min_max_getters() {
     assert_eq!(beyond_min.nanosecond(), 0);
 
     assert_eq!(format!("{:?}", beyond_max), "+262143-01-01T01:59:59.999999999+02:00");
-    // RFC 2822 doesn't support years with more than 4 digits.
-    // assert_eq!(beyond_max.to_rfc2822(), "");
+    assert!(
+        beyond_max.to_rfc2822_opt().is_none(),
+        "RFC 2822 doesn't support years with more than 4 digits."
+    );
     #[cfg(feature = "alloc")]
     assert_eq!(beyond_max.to_rfc3339(), "+262143-01-01T01:59:59.999999999+02:00");
     #[cfg(feature = "alloc")]
