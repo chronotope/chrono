@@ -489,7 +489,7 @@ impl LeapSecond {
 #[derive(Copy, Clone, Eq, PartialEq)]
 struct TimeZoneName {
     /// Length-prefixed string buffer
-    bytes: [u8; 8],
+    bytes: [u8; 32],
 }
 
 impl TimeZoneName {
@@ -499,23 +499,28 @@ impl TimeZoneName {
     /// Time zone designations should consist of at least three (3) and no more than six (6) ASCII
     /// characters from the set of alphanumerics, “-”, and “+”. This is for compatibility with
     /// POSIX requirements for time zone abbreviations.
+    ///
+    /// That is a *should*, not a *must*: `zic` and glibc accept longer
+    /// designations and a slightly wider character set (notably `_`). Rejecting
+    /// an over-long designation would fail the whole TZif parse and make `Local`
+    /// fall back to UTC, so we keep the offset and simply truncate the name to
+    /// the 31-byte buffer, and additionally allow `_`.
     fn new(input: &[u8]) -> Result<Self, Error> {
-        let len = input.len();
+        // Truncate over-long designations rather than failing the parse.
+        let len = input.len().min(31);
 
-        if !(3..=7).contains(&len) {
-            return Err(Error::LocalTimeType(
-                "time zone name must have between 3 and 7 characters",
-            ));
+        if len < 3 {
+            return Err(Error::LocalTimeType("time zone name must have at least 3 characters"));
         }
 
-        let mut bytes = [0; 8];
-        bytes[0] = input.len() as u8;
+        let mut bytes = [0; 32];
+        bytes[0] = len as u8;
 
         let mut i = 0;
         while i < len {
             let b = input[i];
             match b {
-                b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'+' | b'-' => {}
+                b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'+' | b'-' | b'_' => {}
                 _ => return Err(Error::LocalTimeType("invalid characters in time zone name")),
             }
 
@@ -528,14 +533,8 @@ impl TimeZoneName {
 
     /// Returns time zone name as a byte slice
     fn as_bytes(&self) -> &[u8] {
-        match self.bytes[0] {
-            3 => &self.bytes[1..4],
-            4 => &self.bytes[1..5],
-            5 => &self.bytes[1..6],
-            6 => &self.bytes[1..7],
-            7 => &self.bytes[1..8],
-            _ => unreachable!(),
-        }
+        let len = self.bytes[0] as usize;
+        &self.bytes[1..=len]
     }
 
     /// Check if two time zone names are equal
@@ -797,7 +796,16 @@ mod tests {
         assert_eq!(TimeZoneName::new(b"-1230")?.as_bytes(), b"-1230");
         assert!(matches!(TimeZoneName::new("−0330".as_bytes()), Err(Error::LocalTimeType(_)))); // MINUS SIGN (U+2212)
         assert!(matches!(TimeZoneName::new(b"\x00123"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"12345678"), Err(Error::LocalTimeType(_))));
+        // Designations longer than the historical 6/7-char limit are accepted:
+        // `zic`/glibc allow them, and rejecting one fails the whole TZif file.
+        assert_eq!(TimeZoneName::new(b"12345678")?.as_bytes(), b"12345678");
+        // Custom designations containing `_` parse too (regression: a name like
+        // this previously made the entire zone fail to load, so `Local` fell
+        // back to UTC instead of the file's real offset).
+        assert_eq!(TimeZoneName::new(b"Solar_Custom_Zone")?.as_bytes(), b"Solar_Custom_Zone");
+        // Over-long designations are truncated to fit the buffer (keeping the
+        // offset) rather than failing the parse.
+        assert_eq!(TimeZoneName::new(&[b'A'; 64])?.as_bytes(), &[b'A'; 31]);
         assert!(matches!(TimeZoneName::new(b"GMT\0\0\0"), Err(Error::LocalTimeType(_))));
 
         Ok(())
