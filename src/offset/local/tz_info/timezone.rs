@@ -237,8 +237,10 @@ impl<'a> TimeZoneRef<'a> {
 
                 // the end and start here refers to where the time starts prior to the transition
                 // and where it ends up after. not the temporal relationship.
-                let transition_end = transition.unix_leap_time + i64::from(after_ltt.ut_offset);
-                let transition_start = transition.unix_leap_time + i64::from(prev.ut_offset);
+                let transition_end =
+                    transition.unix_leap_time.saturating_add(i64::from(after_ltt.ut_offset));
+                let transition_start =
+                    transition.unix_leap_time.saturating_add(i64::from(prev.ut_offset));
 
                 match transition_start.cmp(&transition_end) {
                     Ordering::Greater => {
@@ -950,6 +952,37 @@ mod tests {
             time_zone.find_local_time_type(i64::MAX),
             Err(Error::FindLocalTimeType(_))
         ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_find_local_time_type_from_local_overflow() -> Result<(), Error> {
+        use crate::MappedLocalTime;
+
+        let local =
+            crate::NaiveDate::from_ymd_opt(2020, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+
+        // A transition timestamp near `i64::MAX` plus a positive offset overflows when mapping a
+        // local time; near `i64::MIN` a negative offset underflows.
+        let near_max = TimeZone::new(
+            vec![Transition::new(i64::MAX, 1)],
+            vec![LocalTimeType::UTC, LocalTimeType::new(3600, false, Some(b"FOO"))?],
+            Vec::new(),
+            None,
+        )?;
+        assert_eq!(
+            near_max.find_local_time_type_from_local(local)?,
+            MappedLocalTime::Single(LocalTimeType::UTC)
+        );
+
+        let near_min = TimeZone::new(
+            vec![Transition::new(i64::MIN, 0)],
+            vec![LocalTimeType::new(-3600, false, Some(b"FOO"))?, LocalTimeType::UTC],
+            Vec::new(),
+            None,
+        )?;
+        assert!(near_min.find_local_time_type_from_local(local).is_ok());
 
         Ok(())
     }
