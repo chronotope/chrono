@@ -102,10 +102,12 @@ impl TzDataIndexes {
     fn new<const ENTRY_LEN: usize>(mut reader: impl Read, header: &TzDataHeader) -> Result<Self> {
         let mut buf = vec![0; header.data_offset.saturating_sub(header.index_offset) as usize];
         reader.read_exact(&mut buf)?;
-        // replace chunks with array_chunks when it's stable
+        // replace chunks_exact with array_chunks when it's stable. A trailing partial chunk
+        // (when the index region size is not a multiple of `ENTRY_LEN`) is not a valid entry
+        // and must be skipped, otherwise the slicing below reads out of bounds.
         Ok(TzDataIndexes {
             indexes: buf
-                .chunks(ENTRY_LEN)
+                .chunks_exact(ENTRY_LEN)
                 .filter_map(|chunk| {
                     from_bytes_until_nul(&chunk[..TZ_NAME_LEN]).map(|name| {
                         let name = name.to_bytes().to_vec().into_boxed_slice();
@@ -174,6 +176,23 @@ const TZDATA_VERSION_LEN: usize = 12;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn test_tzdata_index_partial_entry() {
+        // An index region whose size is not a multiple of `ENTRY_LEN` leaves a trailing
+        // partial chunk that is too short to slice as an entry.
+        let mut data = Vec::new();
+        data.extend_from_slice(b"tzdata2024a\0");
+        data.extend_from_slice(&24u32.to_be_bytes()); // index_offset
+        data.extend_from_slice(&44u32.to_be_bytes()); // data_offset, index region = 20 bytes
+        data.extend_from_slice(&100u32.to_be_bytes()); // zonetab_offset
+        data.extend_from_slice(&[0u8; 20]);
+        let header = TzDataHeader::new(&mut Cursor::new(&data[..])).unwrap();
+        let indexes =
+            TzDataIndexes::new::<OHOS_ENTRY_LEN>(&mut Cursor::new(&data[24..]), &header).unwrap();
+        assert!(indexes.indexes.is_empty());
+    }
 
     #[test]
     fn test_ohos_tzdata_header_and_index() {
