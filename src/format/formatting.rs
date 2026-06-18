@@ -410,8 +410,10 @@ impl OffsetFormat {
                 OffsetPrecision::Hours
             }
             OffsetPrecision::Minutes | OffsetPrecision::OptionalMinutes => {
-                // Round seconds to the nearest minute.
-                let minutes = (off + 30) / 60;
+                // Round seconds to the nearest minute, but never roll over to 24:00. A
+                // `FixedOffset` may be as large as 23:59:59, and rounding that up would emit
+                // an invalid "+24:00" that no offset parser (including ours) accepts.
+                let minutes = ((off + 30) / 60).min(24 * 60 - 1);
                 mins = (minutes % 60) as u8;
                 hours = (minutes / 60) as u8;
                 if self.precision == OffsetPrecision::OptionalMinutes && mins == 0 {
@@ -947,5 +949,42 @@ mod tests {
                 ["+345", "-330", "+11", "-110022", "+23426", "-123430", "Z"],
             ],
         );
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_offset_minute_rounding_no_24h_rollover() {
+        // The largest representable `FixedOffset` is 23:59:59. Rounding it (or anything
+        // from 23:59:30 onwards) to whole minutes must not produce "+24:00", which is not
+        // a valid offset and does not round-trip through `parse_from_rfc3339`.
+        for (secs, colons, expected) in [
+            (86_399, Colons::Colon, "+23:59"), // +23:59:59
+            (86_399, Colons::None, "+2359"),
+            (86_370, Colons::Colon, "+23:59"), // +23:59:30, the bottom of the rounding window
+            (-86_399, Colons::Colon, "-23:59"),
+            (-86_370, Colons::None, "-2359"),
+            // Regular rounding is unaffected: 23:59:29 still rounds down to 23:59.
+            (86_369, Colons::Colon, "+23:59"),
+        ] {
+            let off = FixedOffset::east_opt(secs).unwrap();
+            let mut s = String::new();
+            OffsetFormat {
+                precision: OffsetPrecision::Minutes,
+                colons,
+                allow_zulu: false,
+                padding: Pad::Zero,
+            }
+            .format(&mut s, off)
+            .unwrap();
+            assert_eq!(s, expected, "offset {secs}s formatted incorrectly");
+        }
+
+        // The bug was reachable through the public `to_rfc3339`, and the result must parse
+        // back rather than fail with `OutOfRange`.
+        let dt =
+            FixedOffset::east_opt(86_399).unwrap().with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
+        let rfc = dt.to_rfc3339();
+        assert_eq!(rfc, "2020-01-01T00:00:00+23:59");
+        assert!(crate::DateTime::parse_from_rfc3339(&rfc).is_ok());
     }
 }
