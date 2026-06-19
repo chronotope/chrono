@@ -129,13 +129,20 @@ impl<'a> State<'a> {
             false => 8,
         };
 
+        // The header counts are unvalidated `u32`s read from the file. Their byte
+        // sizes are computed in `usize`, which is 32-bit on targets such as i686,
+        // armv7/Android and wasm32, so the products below overflow there.
+        let block_len = |count: usize, size: usize| {
+            count.checked_mul(size).ok_or(Error::InvalidTzFile("invalid data block length"))
+        };
+
         Ok(Self {
             time_size,
-            transition_times: cursor.read_exact(header.transition_count * time_size)?,
+            transition_times: cursor.read_exact(block_len(header.transition_count, time_size)?)?,
             transition_types: cursor.read_exact(header.transition_count)?,
-            local_time_types: cursor.read_exact(header.type_count * 6)?,
+            local_time_types: cursor.read_exact(block_len(header.type_count, 6)?)?,
             names: cursor.read_exact(header.char_count)?,
-            leap_seconds: cursor.read_exact(header.leap_count * (time_size + 4))?,
+            leap_seconds: cursor.read_exact(block_len(header.leap_count, time_size + 4)?)?,
             std_walls: cursor.read_exact(header.std_wall_count)?,
             ut_locals: cursor.read_exact(header.ut_local_count)?,
             header,
@@ -345,4 +352,48 @@ enum Version {
     V2,
     /// Version 3
     V3,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse;
+
+    /// Build a minimal valid V1 TZif header (44 bytes) with chosen record counts.
+    fn v1_header(
+        transition_count: u32,
+        type_count: u32,
+        char_count: u32,
+        leap_count: u32,
+    ) -> Vec<u8> {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(b"TZif");
+        buf.push(0x00); // version 1
+        buf.extend_from_slice(&[0u8; 15]);
+        buf.extend_from_slice(&0u32.to_be_bytes()); // isutcnt
+        buf.extend_from_slice(&0u32.to_be_bytes()); // isstdcnt
+        buf.extend_from_slice(&leap_count.to_be_bytes()); // leapcnt
+        buf.extend_from_slice(&transition_count.to_be_bytes()); // timecnt
+        buf.extend_from_slice(&type_count.to_be_bytes()); // typecnt
+        buf.extend_from_slice(&char_count.to_be_bytes()); // charcnt
+        buf
+    }
+
+    // `type_count * 6` overflows a 32-bit `usize`. Parsing must report an error
+    // rather than panic (debug) or wrap and over-allocate (release).
+    #[test]
+    fn type_count_block_len_does_not_overflow() {
+        assert!(parse(&v1_header(0, 0x2AAA_AAAB, 1, 0)).is_err());
+    }
+
+    // `transition_count * time_size` overflows a 32-bit `usize`.
+    #[test]
+    fn transition_count_block_len_does_not_overflow() {
+        assert!(parse(&v1_header(0x4000_0001, 1, 1, 0)).is_err());
+    }
+
+    // `leap_count * (time_size + 4)` overflows a 32-bit `usize`.
+    #[test]
+    fn leap_count_block_len_does_not_overflow() {
+        assert!(parse(&v1_header(0, 1, 1, 0x2000_0001)).is_err());
+    }
 }
