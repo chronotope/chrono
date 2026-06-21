@@ -272,8 +272,8 @@ impl<T: fmt::Debug> MappedLocalTime<T> {
     ///
     /// # Panics
     ///
-    /// Panics if the local time falls within a _fold_ or a _gap_ in the local time, and on any
-    /// error that may have been returned by the type implementing [`TimeZone`].
+    /// Panics if the local time falls within a _fold_ or a _gap_ in the local time, as defined
+    /// by the type implementing [`TimeZone`].
     #[must_use]
     #[track_caller]
     pub fn unwrap(self) -> T {
