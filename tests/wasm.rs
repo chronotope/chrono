@@ -6,7 +6,7 @@
 //! The check will fail if the local timezone does not match one of the timezones defined below.
 
 #![cfg(all(
-    target_arch = "wasm32",
+    target_family = "wasm",
     feature = "wasmbind",
     feature = "clock",
     not(any(target_os = "emscripten", target_os = "wasi"))

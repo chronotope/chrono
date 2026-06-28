@@ -7,7 +7,7 @@ use core::fmt;
 #[cfg(all(
     feature = "now",
     not(all(
-        target_arch = "wasm32",
+        target_family = "wasm",
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
     ))
@@ -87,7 +87,7 @@ impl Utc {
     /// let now_with_offset = Utc::now().with_timezone(&offset);
     /// ```
     #[cfg(not(all(
-        target_arch = "wasm32",
+        target_family = "wasm",
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
     )))]
@@ -100,7 +100,7 @@ impl Utc {
 
     /// Returns a `DateTime` which corresponds to the current date and time.
     #[cfg(all(
-        target_arch = "wasm32",
+        target_family = "wasm",
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi", target_os = "linux"))
     ))]
