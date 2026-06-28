@@ -47,7 +47,7 @@ rkyv = { version = "0.7.43", optional = true, default-features = false }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 defmt = { version = "1.0.1", optional = true }
 
-[target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
+[target.'cfg(all(target_family = "wasm", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }       # contains FFI bindings for the JS Date API
 
@@ -64,7 +64,7 @@ similar-asserts = { version = "2.0.0" }
 bincode = { version = "1.3.0" }
 windows-bindgen = { version = "0.66" }                     # MSRV is 1.74
 
-[target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dev-dependencies]
+[target.'cfg(all(target_family = "wasm", not(any(target_os = "emscripten", target_os = "wasi"))))'.dev-dependencies]
 wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]

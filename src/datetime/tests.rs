@@ -1387,7 +1387,7 @@ fn test_subsecond_part() {
 // `i32` (year 2035 problem), or an `u64` (no values before `UNIX-EPOCH`).
 // See https://github.com/rust-lang/rust/issues/44394.
 #[test]
-#[cfg(all(feature = "std", not(all(target_arch = "wasm32", target_os = "wasi"))))]
+#[cfg(all(feature = "std", not(all(target_family = "wasm", target_os = "wasi"))))]
 fn test_from_system_time() {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
