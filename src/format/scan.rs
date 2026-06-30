@@ -199,6 +199,10 @@ pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
 /// ASCII-compatible `-` HYPHEN-MINUS (U+2D).
 /// This is part of [RFC 3339 & ISO 8601].
 ///
+/// The `allow_seconds` flag allows a trailing seconds component such as the `:30`
+/// in `+00:00:30`. `FixedOffset`'s `Display`/`Debug` print sub-minute offsets in
+/// that form, so the parsers behind `FromStr` accept it for the value to round-trip.
+///
 /// [RFC 3339 & ISO 8601]: https://en.wikipedia.org/w/index.php?title=ISO_8601&oldid=1114309368#Time_offsets_from_UTC
 pub(crate) fn timezone_offset<F>(
     mut s: &str,
@@ -206,6 +210,7 @@ pub(crate) fn timezone_offset<F>(
     allow_zulu: bool,
     allow_missing_minutes: bool,
     allow_tz_minus_sign: bool,
+    allow_seconds: bool,
 ) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
@@ -275,7 +280,23 @@ where
         _ => return Err(TOO_SHORT),
     };
 
-    let seconds = hours * 3600 + minutes * 60;
+    let mut seconds = hours * 3600 + minutes * 60;
+
+    // optional seconds (00--59), as emitted by `FixedOffset`'s `Display`/`Debug`
+    if allow_seconds {
+        let rest = consume_colon(s)?;
+        if let Ok(ds) = digits(rest) {
+            match ds {
+                (s1 @ b'0'..=b'5', s2 @ b'0'..=b'9') => {
+                    seconds += i32::from((s1 - b'0') * 10 + (s2 - b'0'));
+                    s = &rest[2..];
+                }
+                (b'6'..=b'9', b'0'..=b'9') => return Err(OUT_OF_RANGE),
+                _ => {}
+            }
+        }
+    }
+
     Ok((s, if negative { -seconds } else { seconds }))
 }
 
@@ -316,7 +337,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, i32)> {
         }
         Err(INVALID)
     } else {
-        timezone_offset(s, |s| Ok(s), false, false, false)
+        timezone_offset(s, |s| Ok(s), false, false, false, false)
     }
 }
 
