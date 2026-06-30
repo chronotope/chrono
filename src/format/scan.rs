@@ -15,14 +15,16 @@ use crate::Weekday;
 /// Any number that does not fit in `i64` is an error.
 #[inline]
 pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
-    assert!(min <= max);
-
     // We are only interested in ascii numbers, so we can work with the `str` as bytes. We stop on
     // the first non-numeric byte, which may be another ascii character or beginning of multi-byte
     // UTF-8 character.
     let bytes = s.as_bytes();
     if bytes.len() < min {
         return Err(TOO_SHORT);
+    }
+
+    if min > max {
+        return Err(INVALID);
     }
 
     let mut n = 0i64;
