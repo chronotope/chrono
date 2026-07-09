@@ -2210,6 +2210,11 @@ impl From<NaiveDateTime> for NaiveDate {
 }
 
 /// Iterator over `NaiveDate` with a step size of one day.
+///
+/// This iterator is unbounded: forwards it runs to [`NaiveDate::MAX`], backwards (via
+/// [`DoubleEndedIterator`]) it runs to [`NaiveDate::MIN`]. The two directions do not share a
+/// common range and never meet, so this type deliberately does not implement
+/// [`ExactSizeIterator`].
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
 pub struct NaiveDateDaysIterator {
     value: NaiveDate,
@@ -2232,8 +2237,6 @@ impl Iterator for NaiveDateDaysIterator {
     }
 }
 
-impl ExactSizeIterator for NaiveDateDaysIterator {}
-
 impl DoubleEndedIterator for NaiveDateDaysIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
         // We return the current value, and have no way to return `NaiveDate::MIN`.
@@ -2246,6 +2249,11 @@ impl DoubleEndedIterator for NaiveDateDaysIterator {
 impl FusedIterator for NaiveDateDaysIterator {}
 
 /// Iterator over `NaiveDate` with a step size of one week.
+///
+/// This iterator is unbounded: forwards it runs to [`NaiveDate::MAX`], backwards (via
+/// [`DoubleEndedIterator`]) it runs to [`NaiveDate::MIN`]. The two directions do not share a
+/// common range and never meet, so this type deliberately does not implement
+/// [`ExactSizeIterator`].
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
 pub struct NaiveDateWeeksIterator {
     value: NaiveDate,
@@ -2265,8 +2273,6 @@ impl Iterator for NaiveDateWeeksIterator {
         (exact_size as usize, Some(exact_size as usize))
     }
 }
-
-impl ExactSizeIterator for NaiveDateWeeksIterator {}
 
 impl DoubleEndedIterator for NaiveDateWeeksIterator {
     fn next_back(&mut self) -> Option<Self::Item> {

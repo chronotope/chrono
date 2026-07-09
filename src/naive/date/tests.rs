@@ -746,6 +746,53 @@ fn test_week_iterator_limit() {
     );
 }
 
+// Reversing an `iter_days`/`iter_weeks` iterator walks backwards in time from the starting
+// date, and `next_back` must agree with `Iterator::next` on where iteration begins.
+// Regression test for https://github.com/chronotope/chrono/issues/1757, where a stray
+// `ExactSizeIterator` impl (reporting the *forward* distance to `NaiveDate::MAX`) let
+// `Take::rev` skip using a bogus length and yield garbage dates.
+#[test]
+fn test_day_iterator_rev() {
+    let start = NaiveDate::from_ymd_opt(2025, 10, 10).unwrap();
+
+    // `rev()` steps backwards one day at a time from the starting date.
+    let back: Vec<_> = start.iter_days().rev().take(4).collect();
+    assert_eq!(
+        back,
+        vec![
+            NaiveDate::from_ymd_opt(2025, 10, 10).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 10, 9).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 10, 8).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 10, 7).unwrap(),
+        ]
+    );
+
+    // The first element produced from the back is the same as the first element produced
+    // from the front: both iteration directions originate at the starting date.
+    let mut iter = start.iter_days();
+    assert_eq!(iter.next_back(), Some(start));
+    assert_eq!(start.iter_days().next(), Some(start));
+}
+
+#[test]
+fn test_week_iterator_rev() {
+    let start = NaiveDate::from_ymd_opt(2025, 10, 10).unwrap();
+
+    let back: Vec<_> = start.iter_weeks().rev().take(3).collect();
+    assert_eq!(
+        back,
+        vec![
+            NaiveDate::from_ymd_opt(2025, 10, 10).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 10, 3).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 9, 26).unwrap(),
+        ]
+    );
+
+    let mut iter = start.iter_weeks();
+    assert_eq!(iter.next_back(), Some(start));
+    assert_eq!(start.iter_weeks().next(), Some(start));
+}
+
 #[test]
 fn test_weeks_from() {
     // tests per: https://github.com/chronotope/chrono/issues/961
