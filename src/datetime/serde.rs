@@ -1339,7 +1339,7 @@ mod tests {
         }
 
         let tz = TestTimeZone;
-        assert_eq!(format!("{:?}", &tz), "TEST");
+        assert_eq!(format!("{:?}", tz), "TEST");
 
         let dt = tz.with_ymd_and_hms(2023, 4, 24, 21, 10, 33).unwrap();
         let encoded = serde_json::to_string(&dt).unwrap();

@@ -149,9 +149,9 @@ impl AlternateTime {
         let dst_start_time_in_utc = self.dst_start_time as i64 - self.std.ut_offset as i64;
         let dst_end_time_in_utc = self.dst_end_time as i64 - self.dst.ut_offset as i64;
 
-        let current_year = match UtcDateTime::from_timespec(unix_time) {
-            Ok(dt) => dt.year,
-            Err(error) => return Err(error),
+        let current_year = {
+            let dt = UtcDateTime::from_timespec(unix_time)?;
+            dt.year
         };
 
         // Check if the current year is valid for the following computations
