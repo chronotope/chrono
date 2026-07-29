@@ -1341,14 +1341,16 @@ impl NaiveDate {
     /// }
     /// assert_eq!(count, 4);
     ///
-    /// for d in NaiveDate::from_ymd_opt(2016, 3, 1).unwrap().iter_days().rev().take(4) {
+    /// // The iterator is double-ended: reversing a bounded range yields the same
+    /// // dates in reverse order.
+    /// for d in NaiveDate::from_ymd_opt(2016, 2, 27).unwrap().iter_days().take(4).rev() {
     ///     count -= 1;
     ///     assert_eq!(d, expected[count]);
     /// }
     /// ```
     #[inline]
     pub const fn iter_days(&self) -> NaiveDateDaysIterator {
-        NaiveDateDaysIterator { value: *self }
+        NaiveDateDaysIterator { value: *self, end: NaiveDate::MAX }
     }
 
     /// Returns an iterator that steps by weeks across all representable dates.
@@ -1372,14 +1374,24 @@ impl NaiveDate {
     /// }
     /// assert_eq!(count, 4);
     ///
-    /// for d in NaiveDate::from_ymd_opt(2016, 3, 19).unwrap().iter_weeks().rev().take(4) {
+    /// // The iterator is double-ended: reversing a bounded range yields the same
+    /// // dates in reverse order.
+    /// for d in NaiveDate::from_ymd_opt(2016, 2, 27).unwrap().iter_weeks().take(4).rev() {
     ///     count -= 1;
     ///     assert_eq!(d, expected[count]);
     /// }
     /// ```
     #[inline]
     pub const fn iter_weeks(&self) -> NaiveDateWeeksIterator {
-        NaiveDateWeeksIterator { value: *self }
+        // Align the exclusive upper bound to the weekly grid starting at `*self`, so
+        // that `next_back` yields the same weeks as `next`, only in reverse order.
+        let weeks = NaiveDate::MAX.signed_duration_since(*self).num_weeks();
+        // `weeks * 7` days is at most `NaiveDate::MAX - *self`, so this never overflows.
+        let end = match self.checked_add_days(Days::new((weeks * 7) as u64)) {
+            Some(end) => end,
+            None => *self,
+        };
+        NaiveDateWeeksIterator { value: *self, end }
     }
 
     /// Returns the [`NaiveWeek`] that the date belongs to, starting with the [`Weekday`]
@@ -2213,21 +2225,26 @@ impl From<NaiveDateTime> for NaiveDate {
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
 pub struct NaiveDateDaysIterator {
     value: NaiveDate,
+    // Exclusive upper bound. The iterator yields the half-open range `[value, end)`;
+    // `next` advances `value` from the front and `next_back` lowers `end` from the back.
+    end: NaiveDate,
 }
 
 impl Iterator for NaiveDateDaysIterator {
     type Item = NaiveDate;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // We return the current value, and have no way to return `NaiveDate::MAX`.
+        if self.value >= self.end {
+            return None;
+        }
         let current = self.value;
-        // This can't panic because current is < NaiveDate::MAX:
+        // `succ_opt()` can't return `None` because `current < end <= NaiveDate::MAX`.
         self.value = current.succ_opt()?;
         Some(current)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact_size = NaiveDate::MAX.signed_duration_since(self.value).num_days();
+        let exact_size = self.end.signed_duration_since(self.value).num_days();
         (exact_size as usize, Some(exact_size as usize))
     }
 }
@@ -2236,10 +2253,25 @@ impl ExactSizeIterator for NaiveDateDaysIterator {}
 
 impl DoubleEndedIterator for NaiveDateDaysIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
-        // We return the current value, and have no way to return `NaiveDate::MIN`.
-        let current = self.value;
-        self.value = current.pred_opt()?;
-        Some(current)
+        if self.value >= self.end {
+            return None;
+        }
+        // `pred_opt()` can't return `None` because `end > value >= NaiveDate::MIN`.
+        self.end = self.end.pred_opt()?;
+        Some(self.end)
+    }
+
+    fn nth_back(&mut self, n: usize) -> Option<Self::Item> {
+        // Skipping from the back in O(1) keeps `take(k).rev()` cheap despite the
+        // iterator spanning up to `NaiveDate::MAX`.
+        if n >= self.len() {
+            self.end = self.value;
+            return None;
+        }
+        // The `n`-th element from the back is `end - (n + 1)` days, which stays
+        // within `[value, end)` and so can't underflow past `NaiveDate::MIN`.
+        self.end = self.end.checked_sub_days(Days::new(n as u64 + 1))?;
+        Some(self.end)
     }
 }
 
@@ -2249,19 +2281,27 @@ impl FusedIterator for NaiveDateDaysIterator {}
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
 pub struct NaiveDateWeeksIterator {
     value: NaiveDate,
+    // Exclusive upper bound, aligned to the weekly grid starting at `value`. The
+    // iterator yields `[value, end)` in weekly steps; `next` advances `value` from
+    // the front and `next_back` lowers `end` from the back.
+    end: NaiveDate,
 }
 
 impl Iterator for NaiveDateWeeksIterator {
     type Item = NaiveDate;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.value >= self.end {
+            return None;
+        }
         let current = self.value;
+        // Can't overflow because `current + 7 days <= end <= NaiveDate::MAX`.
         self.value = current.checked_add_days(Days::new(7))?;
         Some(current)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact_size = NaiveDate::MAX.signed_duration_since(self.value).num_weeks();
+        let exact_size = self.end.signed_duration_since(self.value).num_weeks();
         (exact_size as usize, Some(exact_size as usize))
     }
 }
@@ -2270,9 +2310,25 @@ impl ExactSizeIterator for NaiveDateWeeksIterator {}
 
 impl DoubleEndedIterator for NaiveDateWeeksIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let current = self.value;
-        self.value = current.checked_sub_days(Days::new(7))?;
-        Some(current)
+        if self.value >= self.end {
+            return None;
+        }
+        // Can't underflow because `end - 7 days >= value >= NaiveDate::MIN`.
+        self.end = self.end.checked_sub_days(Days::new(7))?;
+        Some(self.end)
+    }
+
+    fn nth_back(&mut self, n: usize) -> Option<Self::Item> {
+        // Skipping from the back in O(1) keeps `take(k).rev()` cheap despite the
+        // iterator spanning up to `NaiveDate::MAX`.
+        if n >= self.len() {
+            self.end = self.value;
+            return None;
+        }
+        // The `n`-th element from the back is `end - 7 * (n + 1)` days, which stays
+        // within `[value, end)` and so can't underflow past `NaiveDate::MIN`.
+        self.end = self.end.checked_sub_days(Days::new((n as u64 + 1) * 7))?;
+        Some(self.end)
     }
 }
 
