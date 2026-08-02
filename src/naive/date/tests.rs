@@ -222,6 +222,11 @@ fn test_date_from_isoywd() {
     assert_eq!(from_isoywd(2018, 52, Weekday::Mon), Some(ymd(2018, 12, 24)));
     assert_eq!(from_isoywd(2018, 52, Weekday::Sun), Some(ymd(2018, 12, 30)));
     assert_eq!(from_isoywd(2018, 53, Weekday::Mon), None);
+
+    // Extreme years are out of range for `NaiveDate` and must return `None`, not
+    // panic (the internal `year - 1` / `year + 1` step used to overflow here).
+    assert_eq!(from_isoywd(i32::MIN, 1, Weekday::Mon), None);
+    assert_eq!(from_isoywd(i32::MAX, 1, Weekday::Mon), None);
 }
 
 #[test]

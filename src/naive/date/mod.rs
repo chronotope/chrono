@@ -322,8 +322,14 @@ impl NaiveDate {
         let delta = flags.isoweek_delta();
         let (year, ordinal, flags) = if weekord <= delta {
             // ordinal < 1, previous year
-            let prevflags = YearFlags::from_year(year - 1);
-            (year - 1, weekord + prevflags.ndays() - delta, prevflags)
+            // `year - 1` would overflow for `year == i32::MIN`; such a year is
+            // well out of range for `NaiveDate`, so return `None` as documented.
+            let year = match year.checked_sub(1) {
+                Some(year) => year,
+                None => return None,
+            };
+            let prevflags = YearFlags::from_year(year);
+            (year, weekord + prevflags.ndays() - delta, prevflags)
         } else {
             let ordinal = weekord - delta;
             let ndays = flags.ndays();
@@ -332,8 +338,14 @@ impl NaiveDate {
                 (year, ordinal, flags)
             } else {
                 // ordinal > ndays, next year
-                let nextflags = YearFlags::from_year(year + 1);
-                (year + 1, ordinal - ndays, nextflags)
+                // `year + 1` would overflow for `year == i32::MAX`; such a year is
+                // well out of range for `NaiveDate`, so return `None` as documented.
+                let year = match year.checked_add(1) {
+                    Some(year) => year,
+                    None => return None,
+                };
+                let nextflags = YearFlags::from_year(year);
+                (year, ordinal - ndays, nextflags)
             }
         };
         NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
