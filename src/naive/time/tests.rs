@@ -378,6 +378,26 @@ fn test_overflowing_offset() {
 }
 
 #[test]
+fn test_parse_from_str_enforces_exact_width() {
+    assert_eq!(
+        NaiveTime::parse_from_str("010203", "%H%M%S"),
+        Ok(NaiveTime::from_hms_opt(1, 2, 3).unwrap())
+    );
+
+    //  Too short — should fail
+    assert!(NaiveTime::parse_from_str("01023", "%H%M%S").is_err());
+
+    //  Too long — should fail
+    assert!(NaiveTime::parse_from_str("0102033", "%H%M%S").is_err());
+
+    //  Another valid time
+    assert_eq!(
+        NaiveTime::parse_from_str("235959", "%H%M%S"),
+        Ok(NaiveTime::from_hms_opt(23, 59, 59).unwrap())
+    );
+}
+
+#[test]
 #[cfg(feature = "rkyv-validation")]
 fn test_rkyv_validation() {
     let t_min = NaiveTime::MIN;
