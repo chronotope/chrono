@@ -43,9 +43,209 @@ mod tests;
 
 /// ISO 8601 combined date and time with time zone.
 ///
-/// There are some constructors implemented here (the `from_*` methods), but
-/// the general-purpose constructors are all via the methods on the
-/// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
+/// `DateTime` is the preferred type for working with real-world timestamps. It carries all the
+/// information needed to exactly specify a point in time, and to do calculations on it: a date,
+/// time, offset from UTC, and associated time zone type.
+///
+/// Internally it stores the information as a UTC [`NaiveDateTime`] and a generic type implementing
+/// [`Offset`]. The offset contains a type with the offset from UTC, usually as a value. The type
+/// implementing the [`TimeZone`] is tracked by the type system.
+///
+/// In the case of `DateTime<Utc>` the offset is a zero-sized type. This makes a `DateTime<Utc>`
+/// the same size as a [`NaiveDateTime`], while encoding in the type system this value is in UTC
+/// instead of some local time.
+///
+/// # Time zones
+///
+/// [`DateTime`] is generic over types implementing [`TimeZone`].
+///
+/// [`TimeZone`] implementations differ in the amount of information they have available, and
+/// because of that the range of operations they can do correctly.
+///
+/// Ordered from most to least information:
+/// - Types implementing proper time zone support using the IANA time zone database, such as in the
+///   [`chrono_tz`] and [`tzfile`] crates. They support changes like daylight saving time and a
+///   country changing it's official offset from UTC.
+/// - [`Local`] matches the current time zone settings of the operating system. That may however be
+///   a simplified implementation, not describing all complexities like the time zone database does.
+/// - [`FixedOffset`] stores only the offset from UTC of a specific datetime, without knowing the
+///   time zone. This is the preferred type for an end result, a timestamp.
+/// - [`Utc`] is the universal time, carrying no information about a local time at all. It is
+///   continuous, without gaps or ambiguities.
+///
+/// [`chrono_tz`]: https://crates.io/crates/chrono_tz
+/// [`tzfile`]: https://crates.io/crates/tzfile
+///
+/// # Creating a `DateTime`
+///
+/// ## Combine from primitive types
+///
+/// Methods are available on multiple types for convenience.
+/// - Combine a [`TimeZone`] and a [`NaiveDateTime`] with the *local* time:
+///   - [`NaiveDateTime::and_local_timezone()`]
+///   - [`TimeZone::from_local_datetime()`]
+/// - Combine a [`TimeZone`] and a [`NaiveDateTime`] with the time in *UTC*:
+///   - [`TimeZone::from_utc_datetime()`]
+/// - (convenience) Combine a [`TimeZone`] with _local_ year, month, day and time components:
+///   - [`TimeZone::with_ymd_and_hms()`]
+/// - (convenience) Combine a [`NaiveDateTime`] with [`Utc`]:
+///   - [`NaiveDateTime::and_utc()`]
+///
+/// It is also possible to create a `DateTime` from its components, a [`NaiveDateTime`] in UTC and
+/// an `Offset`, with [`DateTime::from_naive_utc_and_offset()`]. This is a low-level method.
+///
+/// ## From the current time
+///
+/// (Requires the default `clock` feature.)
+/// - [`Local::now()`]
+/// - [`Utc::now()`]
+///
+/// ## Parsing
+///
+/// - [`parse_from_str()`](#method.parse_from_str) for parsing with a format string.
+/// - [`parse_from_rfc2822()`](#method.parse_from_rfc2822) for parsing an [RFC 2822] compliant
+///   string such as `Tue, 1 Jul 2003 10:52:37 +0200` to a [`DateTime<FixedOffset>`].
+/// - [`parse_from_rfc3339()`](#method.parse_from_rfc3339) for parsing an [RFC 3339] compliant
+///   string such as `2003-07-01T10:52:37+02:00` to a [`DateTime<FixedOffset>`].
+///
+/// ## From common external types:
+///
+/// - From a UTC Unix timestamp, optionally combined with a [`TimeZone`]:
+///   - [`DateTime::from_timestamp()`](#method.from_timestamp)
+///   - [`TimeZone::timestamp_opt()`]
+///   - [`TimeZone::timestamp_millis_opt()`]
+///   - [`TimeZone::timestamp_nanos()`]
+/// - From the standard library [`SystemTime`] (requires the default `std` feature):
+///   - [`DateTime<Utc>::from`](#impl-From<SystemTime>-for-DateTime<Utc>)
+///   - [`DateTime<Local>::from`](#impl-From<SystemTime>-for-DateTime<Local>)
+/// - From [`js_sys::Date`] (requires the `wasmbind` feature).
+///   - `DateTime<Utc>::from`
+///   - `DateTime<Local>::from`
+///
+/// # Working with `DateTime`s
+///
+/// ## Getting components
+///
+/// For more complex operations on a [`DateTime`], it is best to decompose it into its individual
+/// components and work with those:
+///
+/// - [`naive_utc()`](#method.naive_utc) returns a view to the UTC [`NaiveDateTime`].
+/// - [`naive_local()`](#method.naive_local) gets the a [`NaiveDateTime`] as local time.
+/// - [`date()`](#method.date) is a convenience method to get a local [`NaiveDate`].
+/// - [`time()`](#method.time) is a convenience method to get a local [`NaiveTime`].
+/// - [`offset()`](#method.offset) retrieves the associated offset from UTC.
+/// - [`timezone()`](#method.timezone) reconstructs the time zone.
+///
+/// ## Modifying date and time
+///
+/// Methods to examine the date and do basic modifications are implemented as part the [`Datelike`]
+/// trait. Similarly the [`Timelike`] trait is implemented to examine and do basic modifications to
+/// the time.
+///
+/// Timezone-aware calculations on a [`DateTime`] can be done with:
+/// - [`signed_duration_since()`](#method.signed_duration_since) to get a [`Duration`](
+///   struct.Duration.html) with the difference between two datetimes.
+/// - [`checked_add_signed()`](#method.checked_add_signed) and
+///   [`checked_sub_signed()`](#method.checked_sub_signed) to add/subtract an absolute number of
+///   seconds, minutes, hours, etc.
+/// - [`checked_add_days()`](#method.checked_add_days) and [`checked_sub_days()`](
+///   #method.checked_sub_days) to add/subtract a number of [`Days`], keeping the same local time.
+/// - [`checked_add_months()`](#method.checked_add_months) and [`checked_sub_months()`](
+///   #method.checked_sub_months) to add/subtract a number of [`Months`]. If the day would be out of
+///   range for the resulting month, the last day for that month is used.
+///
+/// The same functionality is also available with implementations of [`Add`] and [`Sub`]. Note that
+/// these may panic if the resulting time would not exist in the local time zone, or on overflow.
+///
+/// ### Example
+///
+#[cfg_attr(not(feature = "clock"), doc = "```ignore")]
+#[cfg_attr(feature = "clock", doc = "```rust")]
+/// use chrono::{Datelike, Days, Duration, Local, Months};
+///
+/// let start = Local::now();
+/// let mut today = start;
+/// while today < start.with_year(start.year() + 1).unwrap() {
+///     let tomorrow = match today.checked_add_days(Days::new(1)) {
+///         Some(day) => day,
+///         None => {
+///             let non_existing_time = today.naive_local() + Days::new(1);
+///             println!("The time {} does not exist in the local time zone.", non_existing_time);
+///             // I am pretty sure there is not a second DST transition the day after tomorrow,
+///             // and I am also pretty sure you are not running this example ca. 250_000 years
+///             // from now. Otherwise, the next line could panic.
+///             today = today + Days::new(2);
+///             continue;
+///         }
+///     };
+///     assert_eq!(tomorrow, today + Days::new(1));
+///
+///     // Adding 24 hours doesn't panic, unless you are running this code in a far, far future.
+///     let today_plus_24h = today + Duration::days(1);
+///     assert_eq!(Some(today_plus_24h), today.checked_add_signed(Duration::days(1)));
+///     assert_eq!(Some(today_plus_24h), today.checked_add_signed(Duration::hours(24)));
+///
+///     if tomorrow != today_plus_24h {
+///         println!("The difference between {} and {} is not 24 hours.", today, tomorrow);
+///         let difference = tomorrow - today_plus_24h;
+///         assert_eq!(difference, tomorrow.signed_duration_since(today_plus_24h));
+///         println!("Naively adding 24 hours is {}s off.", difference.num_seconds());
+///     }
+///
+///     today = tomorrow;
+/// }
+/// assert!(Some(today) >= start.checked_add_months(Months::new(12)));
+/// ```
+///
+/// ## Change the time zone
+///
+/// Various [`From`] implementations are available to convert between [`DateTime<Utc>`],
+/// [`DateTime<FixedOffset>`] and [`DateTime<Local>`].
+///
+/// - [`with_timezone()`](#method.with_timezone) changes the associated time zone, without altering
+///    the UTC instant in time.
+/// - [`fixed_offset()`](#method.fixed_offset) changes the time zone to [`FixedOffset`].
+/// - [`to_utc()`](#method.to_utc) changes the time zone to [`Utc`].
+///
+/// # Converting to external types
+///
+/// ## Formatting
+///
+/// - [`format()`](#method.format) to lazily format with a format string.
+/// - [`format_with_items()`](#method.format_with_items) to lazily format with formatting items.
+/// - [`to_rfc2822()`](#method.to_rfc2822) to format to an [RFC 2822] compliant string such as
+///   `Tue, 1 Jul 2003 10:52:37 +0200`.
+/// - [`to_rfc3339()`](#method.to_rfc3339) to format to an [RFC 3339] compliant string such as.
+///   `2003-07-01T10:52:37+02:00`. Also see [`to_rfc3339_opts()`](#method.to_rfc3339_opts).
+///
+/// ## Unix timestamp
+///
+/// - [`timestamp()`](#method.timestamp) to convert to a UTC Unix timestamp.
+/// - If the subsecond part of a timestamp as second value is needed, consider:
+///   - [`timestamp_subsec_millis()`](#method.timestamp_subsec_millis)
+///   - [`timestamp_subsec_micros()`](#method.timestamp_subsec_micros)
+///   - [`timestamp_subsec_nanos()`](#method.timestamp_subsec_nanos)
+/// - If the subsecond part should be included in the timestamp (reducing the range of available
+///   years), consider:
+///   - [`timestamp_millis`()](#method.timestamp_millis)
+///   - [`timestamp_micros()`](#method.timestamp_micros)
+///   - [`timestamp_nanos()`](#method.timestamp_nanos)
+///
+/// ## Into common external types
+///
+/// - Into the standard library [`SystemTime`] (requires the default `std` feature):
+///   - [`SystemTime::from`]
+/// - Into [`js_sys::Date`] (requires the `wasmbind` feature).
+///   - `js_sys::Date::from`
+///
+/// [RFC 2822]: https://www.rfc-editor.org/rfc/rfc2822.html#section-3.3
+/// [RFC 3339]: https://www.rfc-editor.org/rfc/rfc3339.html#section-5.6
+/// [`SystemTime`]: std::time::SystemTime
+/// [`From`]: std::convert::From
+/// [`DateTime<Utc>::from`]: #impl-From<SystemTime>-for-DateTime<Utc>
+/// [`DateTime<Local>::from`]: #impl-From<SystemTime>-for-DateTime<Local>
+/// [`SystemTime::from`]: #impl-From<DateTime<Tz>>-for-SystemTime
+/// [`js_sys::Date`]: https://docs.rs/js-sys/latest/js_sys/struct.Date.html
 #[derive(Clone)]
 #[cfg_attr(
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
