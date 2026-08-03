@@ -244,7 +244,8 @@ pub(crate) fn parse_rfc3339(mut s: &str) -> ParseResult<DateTime<FixedOffset>> {
         .ok_or(OUT_OF_RANGE)?;
 
     // Max for the hours field is `23`, and for the minutes field `59`.
-    let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
+    let offset =
+        try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true, false));
     if !s.is_empty() {
         return Err(TOO_LONG);
     }
@@ -524,6 +525,7 @@ where
                             false,
                             false,
                             true,
+                            false,
                         ));
                         parsed.set_offset(i64::from(offset))?;
                     }
@@ -535,6 +537,7 @@ where
                             true,
                             false,
                             true,
+                            false,
                         ));
                         parsed.set_offset(i64::from(offset))?;
                     }
@@ -547,6 +550,7 @@ where
                             true,
                             true,
                             true,
+                            false,
                         ));
                         parsed.set_offset(i64::from(offset))?;
                     }
@@ -604,6 +608,8 @@ impl str::FromStr for DateTime<FixedOffset> {
 ///   `DateTime<Utc>`.
 /// - There can be spaces between any of the components.
 /// - The colon in the offset may be missing.
+/// - The offset may carry a seconds component (e.g. `+00:00:30`), as printed by the
+///   `Display`/`Debug` of `DateTime<FixedOffset>` for sub-minute offsets.
 fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
     const DATE_ITEMS: &[Item<'static>] = &[
         Item::Numeric(Numeric::Year, Pad::Zero),
@@ -639,7 +645,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
     let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
         (&s[3..], 0)
     } else {
-        scan::timezone_offset(s, scan::colon_or_space, true, false, true)?
+        scan::timezone_offset(s, scan::colon_or_space, true, false, true, true)?
     };
     parsed.set_offset(i64::from(offset))?;
     Ok((s, ()))

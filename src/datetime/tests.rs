@@ -1013,6 +1013,22 @@ fn test_datetime_from_str() {
 }
 
 #[test]
+fn test_datetime_from_str_suboffset_roundtrip() {
+    // `Display` prints a sub-minute offset as `+HH:MM:SS`, so `FromStr` must read that
+    // back instead of choking on the trailing `:SS`.
+    for secs in [30, -30, 71608, -71608, 86399, -86399] {
+        let offset = FixedOffset::east_opt(secs).unwrap();
+        let dt = offset
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2015, 2, 18).unwrap().and_hms_opt(23, 16, 9).unwrap(),
+            )
+            .unwrap();
+        let printed = dt.to_string();
+        assert_eq!(printed.parse::<DateTime<FixedOffset>>(), Ok(dt), "{printed}");
+    }
+}
+
+#[test]
 fn test_parse_datetime_utc() {
     // valid cases
     let valid = [
