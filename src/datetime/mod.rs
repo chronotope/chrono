@@ -1928,7 +1928,14 @@ impl From<SystemTime> for DateTime<Utc> {
                 if nsec == 0 { (-sec, 0) } else { (-sec - 1, 1_000_000_000 - nsec) }
             }
         };
-        Utc.timestamp_opt(sec, nsec).unwrap()
+        // This conversion is infallible, but the `SystemTime` may be outside the
+        // range of `DateTime`. Saturate to the representable bounds instead of
+        // panicking on `.unwrap()`.
+        match Utc.timestamp_opt(sec, nsec).single() {
+            Some(dt) => dt,
+            None if sec < 0 => DateTime::<Utc>::MIN_UTC,
+            None => DateTime::<Utc>::MAX_UTC,
+        }
     }
 }
 

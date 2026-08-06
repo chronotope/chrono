@@ -1418,6 +1418,12 @@ fn test_from_system_time() {
         .unwrap()
     );
 
+    // A `SystemTime` outside the range of `DateTime` saturates to the bounds
+    // instead of panicking (see #1802).
+    let out_of_range = Duration::from_secs(10_000_000_000_000);
+    assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH + out_of_range), DateTime::<Utc>::MAX_UTC);
+    assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH - out_of_range), DateTime::<Utc>::MIN_UTC);
+
     // DateTime<Utc> -> SystemTime
     assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
     assert_eq!(
