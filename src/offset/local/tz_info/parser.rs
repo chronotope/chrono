@@ -129,13 +129,23 @@ impl<'a> State<'a> {
             false => 8,
         };
 
+        // The data block lengths are products of counts taken from the (untrusted)
+        // header. Use checked multiplication so a malformed header with huge counts
+        // returns an error instead of overflowing `usize`, which panics on 32-bit
+        // targets.
+        let invalid = || Error::InvalidTzFile("invalid header");
+        let transition_times_len =
+            header.transition_count.checked_mul(time_size).ok_or_else(invalid)?;
+        let local_time_types_len = header.type_count.checked_mul(6).ok_or_else(invalid)?;
+        let leap_seconds_len = header.leap_count.checked_mul(time_size + 4).ok_or_else(invalid)?;
+
         Ok(Self {
             time_size,
-            transition_times: cursor.read_exact(header.transition_count * time_size)?,
+            transition_times: cursor.read_exact(transition_times_len)?,
             transition_types: cursor.read_exact(header.transition_count)?,
-            local_time_types: cursor.read_exact(header.type_count * 6)?,
+            local_time_types: cursor.read_exact(local_time_types_len)?,
             names: cursor.read_exact(header.char_count)?,
-            leap_seconds: cursor.read_exact(header.leap_count * (time_size + 4))?,
+            leap_seconds: cursor.read_exact(leap_seconds_len)?,
             std_walls: cursor.read_exact(header.std_wall_count)?,
             ut_locals: cursor.read_exact(header.ut_local_count)?,
             header,

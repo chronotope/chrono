@@ -667,6 +667,23 @@ mod tests {
     }
 
     #[test]
+    fn test_malformed_header_huge_count() {
+        // A header that passes validation but declares a `type_count` large enough
+        // that `type_count * 6` overflows `usize` on 32-bit targets. Parsing must
+        // return an error rather than panicking on the multiplication.
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"TZif\x00"); // magic + version 1
+        bytes.extend_from_slice(&[0u8; 15]); // reserved
+        bytes.extend_from_slice(&0u32.to_be_bytes()); // ut/local count
+        bytes.extend_from_slice(&0u32.to_be_bytes()); // std/wall count
+        bytes.extend_from_slice(&0u32.to_be_bytes()); // leap count
+        bytes.extend_from_slice(&0u32.to_be_bytes()); // transition count
+        bytes.extend_from_slice(&u32::MAX.to_be_bytes()); // type count
+        bytes.extend_from_slice(&1u32.to_be_bytes()); // char count
+        assert!(TimeZone::from_tz_data(&bytes).is_err());
+    }
+
+    #[test]
     fn test_v1_file_with_leap_seconds() -> Result<(), Error> {
         let bytes = b"TZif\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\x01\0\0\0\x1b\0\0\0\0\0\0\0\x01\0\0\0\x04\0\0\0\0\0\0UTC\0\x04\xb2\x58\0\0\0\0\x01\x05\xa4\xec\x01\0\0\0\x02\x07\x86\x1f\x82\0\0\0\x03\x09\x67\x53\x03\0\0\0\x04\x0b\x48\x86\x84\0\0\0\x05\x0d\x2b\x0b\x85\0\0\0\x06\x0f\x0c\x3f\x06\0\0\0\x07\x10\xed\x72\x87\0\0\0\x08\x12\xce\xa6\x08\0\0\0\x09\x15\x9f\xca\x89\0\0\0\x0a\x17\x80\xfe\x0a\0\0\0\x0b\x19\x62\x31\x8b\0\0\0\x0c\x1d\x25\xea\x0c\0\0\0\x0d\x21\xda\xe5\x0d\0\0\0\x0e\x25\x9e\x9d\x8e\0\0\0\x0f\x27\x7f\xd1\x0f\0\0\0\x10\x2a\x50\xf5\x90\0\0\0\x11\x2c\x32\x29\x11\0\0\0\x12\x2e\x13\x5c\x92\0\0\0\x13\x30\xe7\x24\x13\0\0\0\x14\x33\xb8\x48\x94\0\0\0\x15\x36\x8c\x10\x15\0\0\0\x16\x43\xb7\x1b\x96\0\0\0\x17\x49\x5c\x07\x97\0\0\0\x18\x4f\xef\x93\x18\0\0\0\x19\x55\x93\x2d\x99\0\0\0\x1a\x58\x68\x46\x9a\0\0\0\x1b\0\0";
 
