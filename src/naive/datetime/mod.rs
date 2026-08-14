@@ -15,7 +15,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
-use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::format::{BufWrite, Fixed, Item, Numeric, Pad};
 use crate::format::{ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
@@ -2065,9 +2065,11 @@ impl Sub<Days> for NaiveDateTime {
 /// ```
 impl fmt::Debug for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.date.fmt(f)?;
+        let mut f = BufWrite::new(f);
+        self.date.write_to(&mut f)?;
         f.write_char('T')?;
-        self.time.fmt(f)
+        self.time.write_to(&mut f)?;
+        f.finish()
     }
 }
 
@@ -2106,9 +2108,11 @@ impl defmt::Format for NaiveDateTime {
 /// ```
 impl fmt::Display for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.date.fmt(f)?;
+        let mut f = BufWrite::new(f);
+        self.date.write_to(&mut f)?;
         f.write_char(' ')?;
-        self.time.fmt(f)
+        self.time.write_to(&mut f)?;
+        f.finish()
     }
 }
 

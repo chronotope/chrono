@@ -87,6 +87,24 @@ fn bench_datetime_to_rfc3339_opts(c: &mut Criterion) {
     });
 }
 
+fn bench_naive_to_string(c: &mut Criterion) {
+    let mut group = c.benchmark_group("naive_to_string");
+    let dt = NaiveDate::from_ymd_opt(2024, 2, 12).unwrap().and_hms_nano_opt(10, 5, 13, 0).unwrap();
+    group.bench_function("date", |b| b.iter(|| black_box(dt.date()).to_string()));
+    group.bench_function("time", |b| b.iter(|| black_box(dt.time()).to_string()));
+    group.bench_function("datetime", |b| b.iter(|| black_box(dt).to_string()));
+}
+
+fn bench_naive_to_string_nanos(c: &mut Criterion) {
+    let mut group = c.benchmark_group("naive_to_string_nanos");
+    let dt = NaiveDate::from_ymd_opt(2024, 2, 12)
+        .unwrap()
+        .and_hms_nano_opt(10, 5, 13, 84_660_000)
+        .unwrap();
+    group.bench_function("time", |b| b.iter(|| black_box(dt.time()).to_string()));
+    group.bench_function("datetime", |b| b.iter(|| black_box(dt).to_string()));
+}
+
 fn bench_year_flags_from_year(c: &mut Criterion) {
     c.bench_function("bench_year_flags_from_year", |b| {
         b.iter(|| {
@@ -188,14 +206,14 @@ fn bench_format_with_items(c: &mut Criterion) {
 fn benches_delayed_format(c: &mut Criterion) {
     let mut group = c.benchmark_group("delayed_format");
     let dt = Local::now();
-    group.bench_function(BenchmarkId::new("with_display", dt), |b| {
+    group.bench_function("with_display", |b| {
         b.iter_batched(
             || dt.format("%Y-%m-%dT%H:%M:%S%.f%:z"),
             |df| black_box(df).to_string(),
             criterion::BatchSize::SmallInput,
         )
     });
-    group.bench_function(BenchmarkId::new("with_string_buffer", dt), |b| {
+    group.bench_function("with_string_buffer", |b| {
         b.iter_batched(
             || (dt.format("%Y-%m-%dT%H:%M:%S%.f%:z"), String::with_capacity(256)),
             |(df, string)| black_box(df).write_to(&mut black_box(string)),
@@ -249,6 +267,8 @@ criterion_group!(
     bench_datetime_to_rfc2822,
     bench_datetime_to_rfc3339,
     bench_datetime_to_rfc3339_opts,
+    bench_naive_to_string,
+    bench_naive_to_string_nanos,
     bench_year_flags_from_year,
     bench_num_days_from_ce,
     bench_get_local_time,

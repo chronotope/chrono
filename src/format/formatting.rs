@@ -11,12 +11,12 @@ use core::borrow::Borrow;
 use core::fmt::Display;
 use core::fmt::{self, Write};
 
-#[cfg(feature = "alloc")]
-use crate::offset::Offset;
 #[cfg(any(feature = "alloc", feature = "serde"))]
 use crate::{Datelike, FixedOffset, NaiveDateTime, Timelike};
 #[cfg(feature = "alloc")]
 use crate::{NaiveDate, NaiveTime, Weekday};
+#[cfg(feature = "alloc")]
+use crate::{format::buf_write::BufWrite, offset::Offset};
 
 #[cfg(feature = "alloc")]
 use super::locales;
@@ -132,26 +132,27 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     ) -> fmt::Result {
         use self::Numeric::*;
 
+        #[inline]
         fn write_one(w: &mut (impl Write + ?Sized), v: u8) -> fmt::Result {
+            debug_assert!(v < 10);
             w.write_char((b'0' + v) as char)
         }
 
         fn write_two(w: &mut (impl Write + ?Sized), v: u8, pad: Pad) -> fmt::Result {
-            let ones = b'0' + v % 10;
+            let ones = v % 10;
             match (v / 10, pad) {
                 (0, Pad::None) => {}
                 (0, Pad::Space) => w.write_char(' ')?,
-                (tens, _) => w.write_char((b'0' + tens) as char)?,
+                (tens, _) => write_one(w, tens)?,
             }
-            w.write_char(ones as char)
+            write_one(w, ones)
         }
 
         #[inline]
         fn write_year(w: &mut (impl Write + ?Sized), year: i32, pad: Pad) -> fmt::Result {
             if (1000..=9999).contains(&year) {
                 // fast path
-                write_hundreds(w, (year / 100) as u8)?;
-                write_hundreds(w, (year % 100) as u8)
+                write_four_digits(w, year)
             } else {
                 write_n(w, 4, year as i64, pad, !(0..10_000).contains(&year))
             }
@@ -253,37 +254,31 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
                     Ok(())
                 } else {
                     w.write_str(decimal_point(self.locale))?;
-                    if nano % 1_000_000 == 0 {
-                        write!(w, "{:03}", nano / 1_000_000)
-                    } else if nano % 1_000 == 0 {
-                        write!(w, "{:06}", nano / 1_000)
-                    } else {
-                        write!(w, "{nano:09}")
-                    }
+                    write_nanos_auto(w, nano)
                 }
             }
             (Nanosecond3, _, Some(t), _) => {
                 w.write_str(decimal_point(self.locale))?;
-                write!(w, "{:03}", t.nanosecond() / 1_000_000 % 1000)
+                write_lz_pad3(w, t.nanosecond() / 1_000_000 % 1000)
             }
             (Nanosecond6, _, Some(t), _) => {
                 w.write_str(decimal_point(self.locale))?;
-                write!(w, "{:06}", t.nanosecond() / 1_000 % 1_000_000)
+                write_lz_pad6(w, t.nanosecond() / 1_000 % 1_000_000)
             }
             (Nanosecond9, _, Some(t), _) => {
                 w.write_str(decimal_point(self.locale))?;
-                write!(w, "{:09}", t.nanosecond() % 1_000_000_000)
+                write_lz_pad9(w, t.nanosecond() % 1_000_000_000)
             }
             (Internal(InternalFixed { val: Nanosecond3NoDot }), _, Some(t), _) => {
-                write!(w, "{:03}", t.nanosecond() / 1_000_000 % 1_000)
+                write_lz_pad3(w, t.nanosecond() / 1_000_000 % 1_000)
             }
             (Internal(InternalFixed { val: Nanosecond6NoDot }), _, Some(t), _) => {
-                write!(w, "{:06}", t.nanosecond() / 1_000 % 1_000_000)
+                write_lz_pad6(w, t.nanosecond() / 1_000 % 1_000_000)
             }
             (Internal(InternalFixed { val: Nanosecond9NoDot }), _, Some(t), _) => {
-                write!(w, "{:09}", t.nanosecond() % 1_000_000_000)
+                write_lz_pad9(w, t.nanosecond() % 1_000_000_000)
             }
-            (TimezoneName, _, _, Some((tz_name, _))) => write!(w, "{tz_name}"),
+            (TimezoneName, _, _, Some((tz_name, _))) => w.write_str(tz_name),
             (TimezoneOffset | TimezoneOffsetZ, _, _, Some((_, off))) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Minutes,
@@ -338,9 +333,15 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 #[cfg(feature = "alloc")]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut result = String::new();
-        self.write_to(&mut result)?;
-        f.pad(&result)
+        if f.width().is_none() && f.precision().is_none() {
+            let mut f = BufWrite::new(f);
+            self.write_to(&mut f)?;
+            f.finish()
+        } else {
+            let mut result = String::with_capacity(40);
+            self.write_to(&mut result)?;
+            f.pad(&result)
+        }
     }
 }
 
@@ -395,8 +396,7 @@ impl OffsetFormat {
     fn format(&self, w: &mut (impl Write + ?Sized), off: FixedOffset) -> fmt::Result {
         let off = off.local_minus_utc();
         if self.allow_zulu && off == 0 {
-            w.write_char('Z')?;
-            return Ok(());
+            return w.write_char('Z');
         }
         let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
 
@@ -501,7 +501,6 @@ pub enum SecondsFormat {
 }
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
-#[inline]
 #[cfg(any(feature = "alloc", feature = "serde"))]
 pub(crate) fn write_rfc3339(
     w: &mut (impl Write + ?Sized),
@@ -510,18 +509,7 @@ pub(crate) fn write_rfc3339(
     secform: SecondsFormat,
     use_z: bool,
 ) -> fmt::Result {
-    let year = dt.date().year();
-    if (0..=9999).contains(&year) {
-        write_hundreds(w, (year / 100) as u8)?;
-        write_hundreds(w, (year % 100) as u8)?;
-    } else {
-        // ISO 8601 requires the explicit sign for out-of-range years
-        write!(w, "{year:+05}")?;
-    }
-    w.write_char('-')?;
-    write_hundreds(w, dt.date().month() as u8)?;
-    w.write_char('-')?;
-    write_hundreds(w, dt.date().day() as u8)?;
+    dt.date().write_to(w)?;
 
     w.write_char('T')?;
 
@@ -531,26 +519,26 @@ pub(crate) fn write_rfc3339(
         sec += 1;
         nano -= 1_000_000_000;
     }
-    write_hundreds(w, hour as u8)?;
-    w.write_char(':')?;
-    write_hundreds(w, min as u8)?;
-    w.write_char(':')?;
-    let sec = sec;
-    write_hundreds(w, sec as u8)?;
+    write_hms(w, hour, min, sec, b':')?;
 
     match secform {
         SecondsFormat::Secs => {}
-        SecondsFormat::Millis => write!(w, ".{:03}", nano / 1_000_000)?,
-        SecondsFormat::Micros => write!(w, ".{:06}", nano / 1000)?,
-        SecondsFormat::Nanos => write!(w, ".{nano:09}")?,
+        SecondsFormat::Millis => {
+            w.write_char('.')?;
+            write_lz_pad3(w, nano / 1_000_000)?
+        }
+        SecondsFormat::Micros => {
+            w.write_char('.')?;
+            write_lz_pad6(w, nano / 1000)?
+        }
+        SecondsFormat::Nanos => {
+            w.write_char('.')?;
+            write_lz_pad9(w, nano)?
+        }
         SecondsFormat::AutoSi => {
-            if nano == 0 {
-            } else if nano % 1_000_000 == 0 {
-                write!(w, ".{:03}", nano / 1_000_000)?
-            } else if nano % 1_000 == 0 {
-                write!(w, ".{:06}", nano / 1_000)?
-            } else {
-                write!(w, ".{nano:09}")?
+            if nano != 0 {
+                w.write_char('.')?;
+                write_nanos_auto(w, nano)?;
             }
         }
         SecondsFormat::__NonExhaustive => unreachable!(),
@@ -591,18 +579,14 @@ pub(crate) fn write_rfc2822(
     w.write_char(' ')?;
     w.write_str(short_months(english)[dt.month0() as usize])?;
     w.write_char(' ')?;
-    write_hundreds(w, (year / 100) as u8)?;
-    write_hundreds(w, (year % 100) as u8)?;
+    write_four_digits(w, year)?;
     w.write_char(' ')?;
 
     let (hour, min, sec) = dt.time().hms();
-    write_hundreds(w, hour as u8)?;
-    w.write_char(':')?;
-    write_hundreds(w, min as u8)?;
-    w.write_char(':')?;
     let sec = sec + dt.nanosecond() / 1_000_000_000;
-    write_hundreds(w, sec as u8)?;
+    write_hms(w, hour, min, sec, b':')?;
     w.write_char(' ')?;
+
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
         colons: Colons::None,
@@ -612,16 +596,131 @@ pub(crate) fn write_rfc2822(
     .format(w, off)
 }
 
-/// Equivalent to `{:02}` formatting for n < 100.
-pub(crate) fn write_hundreds(w: &mut (impl Write + ?Sized), n: u8) -> fmt::Result {
+#[inline(always)]
+fn to_two_digits(n: u8) -> Result<[u8; 2], fmt::Error> {
     if n >= 100 {
         return Err(fmt::Error);
     }
-
     let tens = b'0' + n / 10;
     let ones = b'0' + n % 10;
-    w.write_char(tens as char)?;
-    w.write_char(ones as char)
+    Ok([tens, ones])
+}
+
+/// Equivalent to `{:02}` formatting for n < 100.
+#[inline]
+pub(crate) fn write_hundreds(w: &mut (impl Write + ?Sized), n: u8) -> fmt::Result {
+    let buf = to_two_digits(n)?;
+    // SAFETY: we only produce valid ASCII
+    w.write_str(unsafe { str::from_utf8_unchecked(&buf) })
+}
+
+/// Equivalent to `{:04}` formatting for n < 10000.
+#[inline]
+pub(crate) fn write_four_digits(w: &mut (impl Write + ?Sized), n: i32) -> fmt::Result {
+    if !(0..=9999).contains(&n) {
+        return Err(fmt::Error);
+    }
+    let hi = to_two_digits((n / 100) as u8)?;
+    let lo = to_two_digits((n % 100) as u8)?;
+
+    let mut buf = [0; 4];
+    buf[0..2].copy_from_slice(&hi);
+    buf[2..4].copy_from_slice(&lo);
+
+    // SAFETY: we only produce valid ASCII
+    w.write_str(unsafe { str::from_utf8_unchecked(&buf) })
+}
+
+#[inline]
+pub(crate) fn write_hms(
+    w: &mut (impl Write + ?Sized),
+    hour: u32,
+    min: u32,
+    sec: u32,
+    sep: u8,
+) -> fmt::Result {
+    let hour = to_two_digits(hour as u8)?;
+    let min = to_two_digits(min as u8)?;
+    let sec = to_two_digits(sec as u8)?;
+
+    let mut buf = [0; 8];
+    buf[0..2].copy_from_slice(&hour);
+    buf[2] = sep;
+    buf[3..5].copy_from_slice(&min);
+    buf[5] = sep;
+    buf[6..8].copy_from_slice(&sec);
+
+    // SAFETY: we only produce valid ASCII
+    w.write_str(unsafe { str::from_utf8_unchecked(&buf) })
+}
+
+pub(crate) fn write_nanos_auto(w: &mut (impl Write + ?Sized), nano: u32) -> fmt::Result {
+    if nano % 1_000_000 == 0 {
+        write_lz_pad3(w, nano / 1_000_000)
+    } else if nano % 1_000 == 0 {
+        write_lz_pad6(w, nano / 1_000)
+    } else {
+        write_lz_pad9(w, nano)
+    }
+}
+
+#[inline]
+fn write_three_digits(out: &mut [u8], n: u32) -> fmt::Result {
+    if n > 999 {
+        return Err(fmt::Error);
+    }
+    let head = n / 100;
+    let tail = n % 100;
+
+    let hund = b'0' + head as u8;
+    let tens = b'0' + (tail / 10) as u8;
+    let ones = b'0' + (tail % 10) as u8;
+    out[0] = hund;
+    out[1] = tens;
+    out[2] = ones;
+    Ok(())
+}
+
+#[inline]
+fn write_six_digits(out: &mut [u8], n: u32) -> fmt::Result {
+    if n > 999_999 {
+        return Err(fmt::Error);
+    }
+    let head = n / 1_000;
+    let tail = n % 1_000;
+    write_three_digits(&mut out[0..3], head)?;
+    write_three_digits(&mut out[3..6], tail)
+}
+
+fn write_lz_pad3(w: &mut (impl Write + ?Sized), n: u32) -> fmt::Result {
+    let mut out = [0; 3];
+    write_three_digits(&mut out, n)?;
+
+    // SAFETY: we only produce valid ASCII
+    w.write_str(unsafe { str::from_utf8_unchecked(&out) })
+}
+
+fn write_lz_pad6(w: &mut (impl Write + ?Sized), n: u32) -> fmt::Result {
+    let mut out = [0; 6];
+    write_six_digits(&mut out, n)?;
+
+    // SAFETY: we only produce valid ASCII
+    w.write_str(unsafe { str::from_utf8_unchecked(&out) })
+}
+
+fn write_lz_pad9(w: &mut (impl Write + ?Sized), n: u32) -> fmt::Result {
+    if n > 999_999_999 {
+        return Err(fmt::Error);
+    }
+    let head = n / 1_000_000;
+    let tail = n % 1_000_000;
+
+    let mut out = [0; 9];
+    write_three_digits(&mut out[0..3], head)?;
+    write_six_digits(&mut out[3..9], tail)?;
+
+    // SAFETY: we only produce valid ASCII
+    w.write_str(unsafe { str::from_utf8_unchecked(&out) })
 }
 
 #[cfg(test)]

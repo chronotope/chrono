@@ -42,6 +42,7 @@ use std::error::Error;
 
 use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
 
+mod buf_write;
 mod formatting;
 mod parsed;
 
@@ -56,8 +57,8 @@ pub mod strftime;
 // not require `alloc`.
 pub(crate) mod locales;
 
+pub(crate) use buf_write::BufWrite;
 pub use formatting::SecondsFormat;
-pub(crate) use formatting::write_hundreds;
 #[cfg(feature = "alloc")]
 pub(crate) use formatting::write_rfc2822;
 #[cfg(any(feature = "alloc", feature = "serde"))]
@@ -65,6 +66,7 @@ pub(crate) use formatting::write_rfc3339;
 #[cfg(feature = "alloc")]
 #[allow(deprecated)]
 pub use formatting::{DelayedFormat, format, format_item};
+pub(crate) use formatting::{write_four_digits, write_hms, write_hundreds, write_nanos_auto};
 #[cfg(feature = "unstable-locales")]
 pub use locales::Locale;
 pub(crate) use parse::parse_rfc3339;

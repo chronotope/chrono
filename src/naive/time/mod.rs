@@ -15,8 +15,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
-    Fixed, Item, Numeric, Pad, ParseError, ParseResult, Parsed, StrftimeItems, parse,
-    parse_and_remainder, write_hundreds,
+    BufWrite, Fixed, Item, Numeric, Pad, ParseError, ParseResult, Parsed, StrftimeItems, parse,
+    parse_and_remainder, write_hms, write_nanos_auto,
 };
 use crate::{FixedOffset, TimeDelta, Timelike};
 use crate::{expect, try_opt};
@@ -871,6 +871,7 @@ impl NaiveTime {
     }
 
     /// Returns a triple of the hour, minute and second numbers.
+    #[inline]
     pub(crate) fn hms(&self) -> (u32, u32, u32) {
         let sec = self.secs % 60;
         let mins = self.secs / 60;
@@ -1503,6 +1504,13 @@ impl Sub<NaiveTime> for NaiveTime {
 /// ```
 impl fmt::Debug for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut f = BufWrite::new(f);
+        self.write_to(&mut f)?;
+        f.finish()
+    }
+}
+impl NaiveTime {
+    pub(crate) fn write_to(&self, f: &mut (impl fmt::Write + ?Sized)) -> fmt::Result {
         let (hour, min, sec) = self.hms();
         let (sec, nano) = if self.frac >= 1_000_000_000 {
             (sec + 1, self.frac - 1_000_000_000)
@@ -1510,21 +1518,13 @@ impl fmt::Debug for NaiveTime {
             (sec, self.frac)
         };
 
-        use core::fmt::Write;
-        write_hundreds(f, hour as u8)?;
-        f.write_char(':')?;
-        write_hundreds(f, min as u8)?;
-        f.write_char(':')?;
-        write_hundreds(f, sec as u8)?;
+        write_hms(f, hour, min, sec, b':')?;
 
         if nano == 0 {
             Ok(())
-        } else if nano % 1_000_000 == 0 {
-            write!(f, ".{:03}", nano / 1_000_000)
-        } else if nano % 1_000 == 0 {
-            write!(f, ".{:06}", nano / 1_000)
         } else {
-            write!(f, ".{nano:09}")
+            f.write_char('.')?;
+            write_nanos_auto(f, nano)
         }
     }
 }
