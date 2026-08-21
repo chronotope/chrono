@@ -262,6 +262,22 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
                     }
                 }
             }
+            (NanosecondTrimmed, _, Some(t), _) => {
+                let nano = t.nanosecond() % 1_000_000_000;
+                if nano == 0 {
+                    return Ok(());
+                }
+                w.write_str(decimal_point(self.locale))?;
+                // Trailing zeros in a fraction are padding: drop them, and narrow the field width
+                // to match so the remaining digits keep their place value. `500_000_000` becomes
+                // one digit of width one (`.5`); `1` keeps all nine (`.000000001`).
+                let (mut digits, mut width) = (nano, 9);
+                while digits % 10 == 0 {
+                    digits /= 10;
+                    width -= 1;
+                }
+                write!(w, "{digits:0width$}")
+            }
             (Nanosecond3, _, Some(t), _) => {
                 w.write_str(decimal_point(self.locale))?;
                 write!(w, "{:03}", t.nanosecond() / 1_000_000 % 1000)

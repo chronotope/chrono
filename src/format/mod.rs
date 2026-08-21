@@ -221,6 +221,17 @@ pub enum Fixed {
     Nanosecond6,
     /// Same as [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9.
     Nanosecond9,
+    /// An optional dot plus the shortest sequence of digits that represents the subsecond value
+    /// exactly, i.e. [`Nanosecond`](#variant.Nanosecond) with trailing zeros trimmed.
+    ///
+    /// Prints nothing if the subsecond value is zero, `.5` rather than `.500` for half a second,
+    /// and a full nine digits only when they are all significant. This is the fraction format used
+    /// by ISO 8601 profiles that require the shortest form, such as Java's
+    /// `DateTimeFormatter.ISO_OFFSET_DATE_TIME`.
+    ///
+    /// In the parser this behaves exactly like [`Nanosecond`](#variant.Nanosecond): trimming is a
+    /// property of printing, and any number of digits is accepted when reading.
+    NanosecondTrimmed,
     /// Timezone name.
     ///
     /// It does not support parsing, its use in the parser is an immediate failure.

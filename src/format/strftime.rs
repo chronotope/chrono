@@ -56,6 +56,7 @@ The following specifiers are available both to formatting and parsing.
 | `%S`  | `60`     | Second number (00--60), zero-padded to 2 digits. [^4]                      |
 | `%f`  | `26490000`    | Number of nanoseconds since last whole second. [^7]                   |
 | `%.f` | `.026490`| Decimal fraction of a second. Consumes the leading dot. [^7]               |
+| `%-.f`| `.02649` | Decimal fraction of a second, trailing zeros trimmed. [^7]                 |
 | `%.3f`| `.026`        | Decimal fraction of a second with a fixed length of 3.                |
 | `%.6f`| `.026490`     | Decimal fraction of a second with a fixed length of 6.                |
 | `%.9f`| `.026490000`  | Decimal fraction of a second with a fixed length of 9.                |
@@ -135,12 +136,16 @@ Notes:
    For the purpose of Chrono, it only accounts for non-leap seconds
    so it slightly differs from ISO C `strftime` behavior.
 
-[^7]: `%f`, `%.f`:
+[^7]: `%f`, `%.f`, `%-.f`:
    <br>
    `%f` and `%.f` are notably different formatting specifiers.<br>
    `%f` counts the number of nanoseconds since the last whole second, while `%.f` is a fraction of a
    second.<br>
-   Example: 7μs is formatted as `7000` with `%f`, and formatted as `.000007` with `%.f`.
+   Example: 7μs is formatted as `7000` with `%f`, and formatted as `.000007` with `%.f`.<br>
+   `%.f` rounds the fraction up to a whole group of 3, 6 or 9 digits. `%-.f` applies the same
+   "no padding" modifier the numeric specifiers take and prints the shortest fraction that is still
+   exact, so half a second is `.5` rather than `.500`. Both print nothing when the subsecond value
+   is zero, and both parse identically — trimming only affects printing.
 
 [^8]: `%Z`:
    Since `chrono` is not aware of timezones beyond their offsets, this specifier
@@ -635,6 +640,11 @@ impl<'a> StrftimeItems<'a> {
                 Item::Numeric(ref kind, _pad) if self.queue.is_empty() => {
                     Some((remainder, Item::Numeric(kind.clone(), new_pad)))
                 }
+                // Trailing zeros in a fraction are padding, so `%-.f` — the same "no padding"
+                // modifier the numeric specifiers take — prints the shortest exact fraction.
+                Item::Fixed(Fixed::Nanosecond) if new_pad == Pad::None && self.queue.is_empty() => {
+                    Some((remainder, Item::Fixed(Fixed::NanosecondTrimmed)))
+                }
                 _ => Some((remainder, self.error(original, remainder))),
             }
         } else {
@@ -742,7 +752,7 @@ mod tests {
     use crate::format::{Fixed, InternalInternal, Numeric::*};
     use crate::format::{fixed, internal_fixed, num, num0, nums};
     #[cfg(feature = "alloc")]
-    use crate::{DateTime, FixedOffset, NaiveDate, TimeZone, Timelike, Utc};
+    use crate::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, TimeZone, Timelike, Utc};
 
     #[test]
     fn test_strftime_items() {
@@ -956,6 +966,8 @@ mod tests {
         assert_eq!(dt.format("%f").to_string(), "026490708");
         assert_eq!(dt.format("%.f").to_string(), ".026490708");
         assert_eq!(dt.with_nanosecond(1_026_490_000).unwrap().format("%.f").to_string(), ".026490");
+        assert_eq!(dt.format("%-.f").to_string(), ".026490708");
+        assert_eq!(dt.with_nanosecond(1_026_490_000).unwrap().format("%-.f").to_string(), ".02649");
         assert_eq!(dt.format("%.3f").to_string(), ".026");
         assert_eq!(dt.format("%.6f").to_string(), ".026490");
         assert_eq!(dt.format("%.9f").to_string(), ".026490708");
@@ -1178,6 +1190,56 @@ mod tests {
         assert_eq!(size_of::<Item>(), 12);
         assert_eq!(size_of::<StrftimeItems>(), 28);
         assert_eq!(size_of::<Locale>(), 2);
+    }
+
+    /// `%-.f` prints the shortest fraction that is still exact. Issue #165.
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_nanosecond_trimmed() {
+        let time = |nano| {
+            NaiveDate::from_ymd_opt(2001, 7, 8).unwrap().and_hms_nano_opt(0, 34, 59, nano).unwrap()
+        };
+
+        // Every trailing zero goes, and only trailing zeros.
+        assert_eq!(time(500_000_000).format("%-.f").to_string(), ".5");
+        assert_eq!(time(123_000_000).format("%-.f").to_string(), ".123");
+        assert_eq!(time(26_490_708).format("%-.f").to_string(), ".026490708");
+        assert_eq!(time(100_000_000).format("%-.f").to_string(), ".1");
+        // A leading zero is significant and stays; a lone nanosecond keeps all nine digits.
+        assert_eq!(time(1).format("%-.f").to_string(), ".000000001");
+        assert_eq!(time(10).format("%-.f").to_string(), ".00000001");
+        // Zero prints nothing at all, like `%.f`.
+        assert_eq!(time(0).format("%-.f").to_string(), "");
+        assert_eq!(time(0).format("%.f").to_string(), "");
+
+        // This is the one thing `%.f` and the `SecondsFormat` variants cannot express.
+        assert_eq!(time(500_000_000).format("%.f").to_string(), ".500");
+
+        // A leap second is carried in the nanosecond field; `%-.f` sees through it the same way
+        // `%.f` does, reporting the fraction within the leap second rather than 1.5 seconds.
+        assert_eq!(time(1_500_000_000).format("%-.f").to_string(), ".5");
+
+        // Trimming is a property of printing only: the parser is unchanged, so a trimmed
+        // fraction and its padded spelling both read back to the same instant.
+        fn parse(s: &str) -> NaiveDateTime {
+            NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%-.f").unwrap()
+        }
+        assert_eq!(parse("2001-07-08T00:34:59.5"), time(500_000_000));
+        assert_eq!(parse("2001-07-08T00:34:59.500"), time(500_000_000));
+        assert_eq!(parse("2001-07-08T00:34:59"), time(0));
+
+        // Only the "no padding" modifier is meaningful on a fraction; the others stay errors,
+        // exactly as they were before `%-.f` existed.
+        assert!(StrftimeItems::new("%0.f").parse().is_err());
+        assert!(StrftimeItems::new("%_.f").parse().is_err());
+        assert!(StrftimeItems::new("%-.3f").parse().is_err());
+        assert!(StrftimeItems::new("%-.9f").parse().is_err());
+
+        // And it round-trips through its own format string.
+        for nano in [0, 1, 10, 500_000_000, 123_456_789, 999_999_999] {
+            let rendered = time(nano).format("%Y-%m-%dT%H:%M:%S%-.f").to_string();
+            assert_eq!(parse(&rendered), time(nano), "round-trip of {rendered}");
+        }
     }
 
     #[test]

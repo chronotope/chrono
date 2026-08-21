@@ -458,7 +458,7 @@ where
                         s = &s[2..];
                     }
 
-                    &Nanosecond => {
+                    &Nanosecond | &NanosecondTrimmed => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
                             parsed.set_nanosecond(nano as i64)?;
