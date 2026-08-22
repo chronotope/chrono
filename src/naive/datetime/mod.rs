@@ -16,7 +16,9 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{Fixed, Item, Numeric, Pad};
-use crate::format::{ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder};
+use crate::format::{
+    INVALID, ParseError, ParseResult, Parsed, StrftimeItems, TOO_SHORT, parse, parse_and_remainder,
+};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::time_delta::NANOS_PER_SEC;
@@ -2114,6 +2116,7 @@ impl fmt::Display for NaiveDateTime {
 
 /// Parsing a `str` into a `NaiveDateTime` uses the same format,
 /// [`%Y-%m-%dT%H:%M:%S%.f`](crate::format::strftime), as in `Debug`.
+/// Whitespace is also accepted in place of the `T`, so that the output of `Display` round-trips.
 ///
 /// # Example
 ///
@@ -2122,6 +2125,7 @@ impl fmt::Display for NaiveDateTime {
 ///
 /// let dt = NaiveDate::from_ymd_opt(2015, 9, 18).unwrap().and_hms_opt(23, 56, 4).unwrap();
 /// assert_eq!("2015-09-18T23:56:04".parse::<NaiveDateTime>(), Ok(dt));
+/// assert_eq!("2015-09-18 23:56:04".parse::<NaiveDateTime>(), Ok(dt));
 ///
 /// let dt = NaiveDate::from_ymd_opt(12345, 6, 7).unwrap().and_hms_milli_opt(7, 59, 59, 1_500).unwrap(); // leap second
 /// assert_eq!("+12345-6-7T7:59:60.5".parse::<NaiveDateTime>(), Ok(dt));
@@ -2132,7 +2136,7 @@ impl str::FromStr for NaiveDateTime {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<NaiveDateTime> {
-        const ITEMS: &[Item<'static>] = &[
+        const DATE_ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
             Item::Space(""),
             Item::Literal("-"),
@@ -2140,8 +2144,8 @@ impl str::FromStr for NaiveDateTime {
             Item::Space(""),
             Item::Literal("-"),
             Item::Numeric(Numeric::Day, Pad::Zero),
-            Item::Space(""),
-            Item::Literal("T"), // XXX shouldn't this be case-insensitive?
+        ];
+        const TIME_ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Hour, Pad::Zero),
             Item::Space(""),
             Item::Literal(":"),
@@ -2154,7 +2158,17 @@ impl str::FromStr for NaiveDateTime {
         ];
 
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        let rest = parse_and_remainder(&mut parsed, s, DATE_ITEMS.iter())?;
+        // `Debug` separates the date and time with a `T`, `Display` with a space; accept either.
+        let trimmed = rest.trim_start();
+        let rest = match trimmed.as_bytes().first() {
+            Some(&b'T') => &trimmed[1..], // XXX shouldn't this be case-insensitive?
+            // Whitespace is a separator only if there was actually some here to trim.
+            Some(_) if trimmed.len() < rest.len() => trimmed,
+            Some(_) => return Err(INVALID),
+            None => return Err(TOO_SHORT),
+        };
+        parse(&mut parsed, rest, TIME_ITEMS.iter())?;
         parsed.to_naive_datetime_with_offset(0)
     }
 }

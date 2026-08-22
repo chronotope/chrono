@@ -1199,6 +1199,11 @@ mod tests {
                     .unwrap()
             )
         );
+        // A space is accepted in place of the `T`, as it already is for `DateTime`.
+        assert_eq!(
+            from_str(r#""2016-07-08 09:10:48.090""#).ok(),
+            from_str(r#""2016-07-08T09:10:48.090""#).ok()
+        );
         assert_eq!(
             from_str(r#""2016-7-8T9:10:48.09""#).ok(),
             Some(
@@ -1264,7 +1269,6 @@ mod tests {
         assert!(from_str(r#""2002-02-28T23:60:00""#).is_err());
         assert!(from_str(r#""2002-02-28T23:59:61""#).is_err());
         assert!(from_str(r#""2016-07-08T09:10:48,090""#).is_err());
-        assert!(from_str(r#""2016-07-08 09:10:48.090""#).is_err());
         assert!(from_str(r#""2016-007-08T09:10:48.090""#).is_err());
         assert!(from_str(r#""yyyy-mm-ddThh:mm:ss.fffffffff""#).is_err());
         assert!(from_str(r#"20160708000000"#).is_err());

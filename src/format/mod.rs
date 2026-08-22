@@ -498,8 +498,8 @@ impl Error for ParseError {
 pub(crate) const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
 const IMPOSSIBLE: ParseError = ParseError(ParseErrorKind::Impossible);
 const NOT_ENOUGH: ParseError = ParseError(ParseErrorKind::NotEnough);
-const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);
-const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
+pub(crate) const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);
+pub(crate) const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
 pub(crate) const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);
 const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 

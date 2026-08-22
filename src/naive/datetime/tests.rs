@@ -123,6 +123,8 @@ fn test_datetime_from_str() {
         "-77-02-18T23:16:09",
         "+82701-05-6T15:9:60.898989898989",
         "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   ",
+        "2012-12-12 12:12:12",  // divider ' ', as written by `Display`
+        "2012-12-12\t12:12:12", // any whitespace will do, like everywhere else in this format
     ];
     for &s in &valid {
         eprintln!("test_parse_naivedatetime valid {s:?}");
@@ -166,7 +168,7 @@ fn test_datetime_from_str() {
         "2012-12-12T12:12:12 GMT",       // unexpected timezone / trailing literal
         "2012-123-12T12:12:12",          // invalid month
         "2012-12-12t12:12:12",           // bad divider 't'
-        "2012-12-12 12:12:12",           // missing divider 'T'
+        "2012-12-1212:12:12",            // missing divider
         "2012-12-12T12:12:12Z",          // trailing char 'Z'
         "+ 82701-123-12T12:12:12",       // strange year, invalid month
         "+802701-123-12T12:12:12",       // out-of-bound year, invalid month
@@ -256,6 +258,14 @@ fn test_datetime_parse_from_str_with_spaces() {
     assert!(parse_from_str("\nAug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
     // trailing literal in data
     assert!(parse_from_str("Aug 09 2013 23:54:35 !!!", "%b %d %Y %H:%M:%S ").is_err());
+}
+
+#[test]
+fn test_to_string_round_trip() {
+    let ndt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    assert_eq!(ndt.to_string(), "2016-07-08 00:00:00");
+    assert_eq!(ndt.to_string().parse(), Ok(ndt));
+    assert_eq!(format!("{ndt:?}").parse(), Ok(ndt));
 }
 
 #[test]
