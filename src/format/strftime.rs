@@ -484,6 +484,16 @@ impl<'a> StrftimeItems<'a> {
             return Some((remainder, self.error(original, remainder)));
         }
 
+        // POSIX `%E` and `%O` request an *alternative representation* (era-based
+        // years, alternative digits). An implementation that has none must
+        // behave as if the modifier were absent, so skip it and format the base
+        // specifier. This matters beyond user-typed formats: `d_fmt`, `t_fmt`
+        // and `d_t_fmt` of nine locales carry these modifiers (`th_TH` and
+        // `lo_LA` use `%Ey` for the Buddhist era, `fa_IR` and `my_MM` among
+        // others use `%O`), so without this `%x`, `%X`, `%c` and `%r` were a
+        // formatting error under those locales.
+        let spec = if spec == 'E' || spec == 'O' { next!() } else { spec };
+
         macro_rules! queue {
             [$head:expr, $($tail:expr),+ $(,)*] => ({
                 const QUEUE: &'static [Item<'static>] = &[$($tail),+];
@@ -1160,6 +1170,56 @@ mod tests {
         assert_eq!(dt2.format_localized("%X", Locale::hy_AM).to_string(), "18:54:32");
         assert_eq!(dt1.format_localized("%X", Locale::chr_US).to_string(), "06:54:32 ᏌᎾᎴ");
         assert_eq!(dt2.format_localized("%X", Locale::chr_US).to_string(), "06:54:32 ᏒᎯᏱᎢᏗᏢ");
+    }
+
+    /// `%E` and `%O` request an alternative representation chrono does not
+    /// have, so per POSIX they are formatted as if the modifier were absent.
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_strftime_alternative_modifiers() {
+        let dt = Utc.with_ymd_and_hms(2024, 2, 9, 6, 54, 32).unwrap();
+        assert_eq!(dt.format("%Ey").to_string(), dt.format("%y").to_string());
+        assert_eq!(dt.format("%EY").to_string(), dt.format("%Y").to_string());
+        assert_eq!(dt.format("%Od").to_string(), dt.format("%d").to_string());
+        assert_eq!(dt.format("%OH:%OM:%OS").to_string(), "06:54:32");
+        assert_eq!(dt.format("%%Ey").to_string(), "%Ey");
+        // A modifier still has to be followed by a specifier.
+        assert!(StrftimeItems::new("%E").parse().is_err());
+        assert!(StrftimeItems::new("%OQ").parse().is_err());
+    }
+
+    /// Nine locales carry `%E` or `%O` in their own `d_fmt`/`t_fmt`/`d_t_fmt`,
+    /// so `%x`, `%X`, `%c` and `%r` used to be a formatting error under them
+    /// even though the caller never typed a modifier.
+    #[test]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    fn test_strftime_localized_alternative_modifiers() {
+        let dt = Utc.with_ymd_and_hms(2024, 2, 9, 18, 54, 32).unwrap();
+        // th_TH and lo_LA use %Ey (Buddhist era) in d_fmt.
+        assert_eq!(dt.format_localized("%x", Locale::th_TH).to_string(), "09/02/24");
+        assert_eq!(dt.format_localized("%x", Locale::lo_LA).to_string(), "09/02/24");
+        // fa_IR uses %O throughout, and its t_fmt_ampm is empty so %r falls
+        // back to a t_fmt that carries the modifier too.
+        assert_eq!(dt.format_localized("%X", Locale::fa_IR).to_string(), "18:54:32");
+        assert_eq!(dt.format_localized("%r", Locale::fa_IR).to_string(), "18:54:32");
+        for locale in [
+            Locale::az_IR,
+            Locale::fa_IR,
+            Locale::lo_LA,
+            Locale::lzh_TW,
+            Locale::mnw_MM,
+            Locale::my_MM,
+            Locale::or_IN,
+            Locale::shn_MM,
+            Locale::th_TH,
+        ] {
+            for fmt in ["%x", "%X", "%c", "%r"] {
+                assert!(
+                    StrftimeItems::new_with_locale(fmt, locale).parse().is_ok(),
+                    "{locale:?} {fmt} failed to parse"
+                );
+            }
+        }
     }
 
     #[test]
