@@ -137,6 +137,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         }
 
         fn write_two(w: &mut (impl Write + ?Sized), v: u8, pad: Pad) -> fmt::Result {
+            debug_assert!(v < 100);
             let ones = b'0' + v % 10;
             match (v / 10, pad) {
                 (0, Pad::None) => {}
@@ -181,11 +182,14 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 
         match (spec, self.date, self.time) {
             (Year, Some(d), _) => write_year(w, d.year(), pad),
-            (YearDiv100, Some(d), _) => write_two(w, d.year().div_euclid(100) as u8, pad),
+            // The century can be up to 4 digits and negative, so it doesn't fit `write_two`.
+            (YearDiv100, Some(d), _) => {
+                write_n(w, 2, i64::from(d.year().div_euclid(100)), pad, false)
+            }
             (YearMod100, Some(d), _) => write_two(w, d.year().rem_euclid(100) as u8, pad),
             (IsoYear, Some(d), _) => write_year(w, d.iso_week().year(), pad),
             (IsoYearDiv100, Some(d), _) => {
-                write_two(w, d.iso_week().year().div_euclid(100) as u8, pad)
+                write_n(w, 2, i64::from(d.iso_week().year().div_euclid(100)), pad, false)
             }
             (IsoYearMod100, Some(d), _) => {
                 write_two(w, d.iso_week().year().rem_euclid(100) as u8, pad)
@@ -693,6 +697,29 @@ mod tests {
         assert_eq!(
             NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%Y").to_string(),
             "-12345"
+        );
+
+        // `%C` is floor division, and the century does not fit in two digits outside 0..=9999
+        assert_eq!(NaiveDate::from_ymd_opt(12345, 1, 1).unwrap().format("%C").to_string(), "123");
+        assert_eq!(NaiveDate::from_ymd_opt(10000, 1, 1).unwrap().format("%C").to_string(), "100");
+        assert_eq!(NaiveDate::from_ymd_opt(9999, 1, 1).unwrap().format("%C").to_string(), "99");
+        assert_eq!(NaiveDate::from_ymd_opt(100, 1, 1).unwrap().format("%C").to_string(), "01");
+        assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().format("%C").to_string(), "00");
+        // the example in the `%C` documentation: 100 BCE is year -99, century -1
+        assert_eq!(NaiveDate::from_ymd_opt(-99, 1, 1).unwrap().format("%C").to_string(), "-1");
+        assert_eq!(NaiveDate::from_ymd_opt(-100, 1, 1).unwrap().format("%C").to_string(), "-1");
+        assert_eq!(NaiveDate::from_ymd_opt(-101, 1, 1).unwrap().format("%C").to_string(), "-2");
+        assert_eq!(NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%C").to_string(), "-124");
+        assert_eq!(NaiveDate::MAX.format("%C").to_string(), "2621");
+        assert_eq!(NaiveDate::MIN.format("%C").to_string(), "-2622");
+        // padding modifiers keep working for both signs
+        assert_eq!(
+            NaiveDate::from_ymd_opt(5, 1, 1).unwrap().format("%-C,%_C,%C").to_string(),
+            "0, 0,00"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(-100, 1, 1).unwrap().format("%-C,%_C,%C").to_string(),
+            "-1,-1,-1"
         );
 
         // corner cases
