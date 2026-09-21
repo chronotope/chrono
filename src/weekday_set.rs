@@ -375,6 +375,11 @@ impl Iterator for WeekdaySetIter {
         self.days.remove(next);
         Some(next)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.days.len().into();
+        (len, Some(len))
+    }
 }
 
 impl DoubleEndedIterator for WeekdaySetIter {
@@ -494,6 +499,39 @@ mod tests {
                     weekdays.split_at(split_day),
                     "split_at({split_day}) failed for {weekdays}",
                 );
+            }
+        }
+    }
+
+    /// `ExactSizeIterator` requires `size_hint` to return the exact size.
+    #[test]
+    fn iter_size_hint_matches_len() {
+        use Weekday::*;
+
+        const WEEK: [Weekday; 7] = [Mon, Tue, Wed, Thu, Fri, Sat, Sun];
+
+        assert_eq!(WeekdaySet::ALL.iter(Mon).size_hint(), (7, Some(7)));
+        assert_eq!(WeekdaySet::EMPTY.iter(Mon).size_hint(), (0, Some(0)));
+
+        for weekdays in WeekdaySet::iter_all() {
+            for start in WEEK {
+                // Consume from both ends, checking the invariant after every step.
+                let mut iter = weekdays.iter(start);
+                let mut from_front = true;
+                loop {
+                    let len = iter.len();
+                    assert_eq!(
+                        iter.size_hint(),
+                        (len, Some(len)),
+                        "size_hint disagreed with len for {weekdays} starting at {start}",
+                    );
+                    let next = if from_front { iter.next() } else { iter.next_back() };
+                    if next.is_none() {
+                        assert_eq!(len, 0);
+                        break;
+                    }
+                    from_front = !from_front;
+                }
             }
         }
     }
