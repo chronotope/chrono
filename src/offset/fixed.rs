@@ -10,7 +10,7 @@ use core::str::FromStr;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{MappedLocalTime, Offset, TimeZone};
-use crate::format::{OUT_OF_RANGE, ParseError, scan};
+use crate::format::{OUT_OF_RANGE, ParseError, TOO_LONG, scan};
 use crate::naive::{NaiveDate, NaiveDateTime};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
@@ -119,7 +119,13 @@ impl FixedOffset {
 impl FromStr for FixedOffset {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (_, offset) = scan::timezone_offset(s, scan::colon_or_space, false, false, true)?;
+        let (rest, offset) = scan::timezone_offset(s, scan::colon_or_space, false, false, true)?;
+        // `Display` may produce offsets with a non-zero seconds part (`±HH:MM:SS`),
+        // which `%z` cannot parse. Reject the trailing input instead of silently
+        // dropping the seconds (or any other remainder).
+        if !rest.is_empty() {
+            return Err(TOO_LONG);
+        }
         Self::east_opt(offset).ok_or(OUT_OF_RANGE)
     }
 }
@@ -241,6 +247,28 @@ mod tests {
         assert_eq!(offset.local_minus_utc, -8 * 3600);
         let offset = FixedOffset::from_str("+06:30").unwrap();
         assert_eq!(offset.local_minus_utc, (6 * 3600) + 1800);
+    }
+
+    #[test]
+    fn test_parse_offset_rejects_trailing_input() {
+        use crate::format::ParseErrorKind;
+
+        fn too_long(e: Option<crate::format::ParseError>) -> bool {
+            e.map_or(false, |e| e.kind() == ParseErrorKind::TooLong)
+        }
+
+        // The seconds part that `Display` produces for sub-minute offsets must not be
+        // silently dropped: `+23:59:59` is not a valid `%z` input.
+        assert!(too_long(FixedOffset::from_str("+23:59:59").err()));
+        assert!(too_long(FixedOffset::from_str("-23:59:59").err()));
+        // Garbage after a valid offset is rejected as well.
+        assert!(too_long(FixedOffset::from_str("+0500garbage").err()));
+        assert!(too_long(FixedOffset::from_str("+05:00:00").err()));
+        // Offsets with a zero seconds part round-trip through `Display`/`FromStr`.
+        for secs in [0, -18000, 18000, 5 * 3600 + 30 * 60] {
+            let offset = FixedOffset::east_opt(secs).unwrap();
+            assert_eq!(FixedOffset::from_str(&format!("{offset}")).unwrap(), offset);
+        }
     }
 
     #[test]

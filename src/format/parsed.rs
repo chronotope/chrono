@@ -549,7 +549,9 @@ impl Parsed {
 
     /// Set the [`offset`](Parsed::offset) field to the given value.
     ///
-    /// The offset is in seconds from local time to UTC.
+    /// The offset is in seconds from UTC to the local time (i.e. the value of
+    /// [`FixedOffset::local_minus_utc`](crate::FixedOffset::local_minus_utc);
+    /// positive east of UTC, negative west of it).
     ///
     /// # Errors
     ///
