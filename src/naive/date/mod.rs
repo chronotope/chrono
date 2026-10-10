@@ -613,7 +613,7 @@ impl NaiveDate {
     /// assert_eq!(
     ///     NaiveDate::from_ymd_opt(2014, 1, 1)
     ///         .unwrap()
-    ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1)),
+    ///         .checked_sub_months(Months::new(i32::MAX as u32 + 1)),
     ///     None
     /// );
     /// ```
