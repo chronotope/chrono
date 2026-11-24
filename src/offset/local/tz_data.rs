@@ -2,7 +2,6 @@
 //!
 //! Ported from: https://android.googlesource.com/platform/prebuilts/fullsdk/sources/+/refs/heads/androidx-appcompat-release/android-34/com/android/i18n/timezone/ZoneInfoDb.java
 use std::{
-    ffi::CStr,
     fmt::Debug,
     fs::File,
     io::{Error, ErrorKind, Read, Result, Seek, SeekFrom},
@@ -109,16 +108,15 @@ impl TzDataIndexes {
             indexes: buf
                 .chunks_exact(ENTRY_LEN)
                 .filter_map(|chunk| {
-                    from_bytes_until_nul(&chunk[..TZ_NAME_LEN]).map(|name| {
-                        let name = name.to_bytes().to_vec().into_boxed_slice();
-                        let offset = u32::from_be_bytes(
-                            chunk[TZ_NAME_LEN..TZ_NAME_LEN + 4].try_into().unwrap(),
-                        );
-                        let length = u32::from_be_bytes(
-                            chunk[TZ_NAME_LEN + 4..TZ_NAME_LEN + 8].try_into().unwrap(),
-                        );
-                        TzDataIndex { name, offset, length }
-                    })
+                    let name_field = &chunk[..TZ_NAME_LEN];
+                    let end = name_field.iter().position(|&byte| byte == 0)?;
+                    let name = Box::from(&name_field[..end]);
+                    let offset =
+                        u32::from_be_bytes(chunk[TZ_NAME_LEN..TZ_NAME_LEN + 4].try_into().unwrap());
+                    let length = u32::from_be_bytes(
+                        chunk[TZ_NAME_LEN + 4..TZ_NAME_LEN + 8].try_into().unwrap(),
+                    );
+                    Some(TzDataIndex { name, offset, length })
                 })
                 .collect(),
         })
@@ -149,15 +147,6 @@ struct TzDataIndex {
     name: Box<[u8]>,
     offset: u32,
     length: u32,
-}
-
-/// TODO: Change this `CStr::from_bytes_until_nul` once MSRV was bumped above 1.72.0
-fn from_bytes_until_nul(bytes: &[u8]) -> Option<&CStr> {
-    let nul_pos = bytes.iter().position(|&b| b == 0)?;
-    // SAFETY:
-    // 1. nul_pos + 1 <= bytes.len()
-    // 2. We know there is a nul byte at nul_pos, so this slice (ending at the nul byte) is a well-formed C string.
-    Some(unsafe { CStr::from_bytes_with_nul_unchecked(&bytes[..=nul_pos]) })
 }
 
 /// Ohos tzdata index entry size: `name + offset + length`
